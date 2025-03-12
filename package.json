@@ -5,7 +5,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js",
-    "build": "echo 'No build step needed'"
+    "build": "echo 'No build step needed'",
+    "vercel-build": "echo 'Nothing to build for backend'"
   },
   "keywords": [],
   "author": "",

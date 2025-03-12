@@ -117,6 +117,10 @@ function categorizeArticle(article) {
 
 
 
+// Sample route
+app.get("/api", (req, res) => {
+  res.json({ message: "Backend running on Vercel!" });
+});
 
 // Updated Endpoint to Add Questions
 app.post("/api/add-questions", async (req, res, next) => {
@@ -290,3 +294,5 @@ const PORT = process.env.PORT || 3000;
 app.listen(6000, '0.0.0.0', () => {
   console.log('Server running on port 6000');
 });
+
+module.exports = app; // Export app for Vercel
