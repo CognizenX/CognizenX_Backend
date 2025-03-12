@@ -115,7 +115,10 @@ function categorizeArticle(article) {
   return "others";
 }
 
-
+// Sample route for base
+app.get("/", (req, res) => {
+  res.json({ message: "Backend running on Vercel! Base route /" });
+});
 
 // Sample route
 app.get("/api", (req, res) => {
