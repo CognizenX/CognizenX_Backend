@@ -176,7 +176,7 @@ app.get("/api/user-preferences", authMiddleware, async (req, res, next) => {
 
     const preferences = activity.categories.map((category) => ({
       category: category.category,
-      domain: category.domain,
+      subDomain: category.domain,
       count: category.count,
     }));
 
