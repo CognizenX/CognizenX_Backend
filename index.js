@@ -194,7 +194,9 @@ app.get("/api/user-preferences", authMiddleware, async (req, res, next) => {
 app.post("/api/log-activity", authMiddleware, async (req, res, next) => {
   const { category, subDomain } = req.body;
   const domain = subDomain
-
+  console.log("req.body", req.body)
+  console.log("category", category)
+  console.log("domain", domain)
   if (!category || !domain) {
     return res.status(400).json({ 
       status: "error", 
