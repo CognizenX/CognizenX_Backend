@@ -192,8 +192,7 @@ app.get("/api/user-preferences", authMiddleware, async (req, res, next) => {
 
 // Endpoint to Log User Activity
 app.post("/api/log-activity", authMiddleware, async (req, res, next) => {
-  const { category, subDomain } = req.body;
-  const domain = subDomain
+  const { category, domain } = req.body;
   console.log("req.body", req.body)
   console.log("category", category)
   console.log("domain", domain)
