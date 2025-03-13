@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const CategoryActivitySchema = new mongoose.Schema({
   category: { type: String, required: true },
+  domain: { type: String, required: true },
   count: { type: Number, default: 0 }, // Frequency of selection
   lastPlayed: { type: Date, default: Date.now },
 });

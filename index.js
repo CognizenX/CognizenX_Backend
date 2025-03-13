@@ -176,6 +176,7 @@ app.get("/api/user-preferences", authMiddleware, async (req, res, next) => {
 
     const preferences = activity.categories.map((category) => ({
       category: category.category,
+      domain: category.domain,
       count: category.count,
     }));
 
@@ -191,10 +192,13 @@ app.get("/api/user-preferences", authMiddleware, async (req, res, next) => {
 
 // Endpoint to Log User Activity
 app.post("/api/log-activity", authMiddleware, async (req, res, next) => {
-  const { category } = req.body;
+  const { category, domain } = req.body;
 
-  if (!category) {
-    return res.status(400).json({ status: "error", message: "Category is required." });
+  if (!category || !domain) {
+    return res.status(400).json({ 
+      status: "error", 
+      message: "Both category and domain are required." 
+    });
   }
 
   try {
@@ -205,13 +209,20 @@ app.post("/api/log-activity", authMiddleware, async (req, res, next) => {
       activity = new UserActivity({ userId, categories: [] });
     }
 
-    const categoryIndex = activity.categories.findIndex((c) => c.category === category);
+    const categoryIndex = activity.categories.findIndex(
+      (c) => c.category === category && c.domain === domain
+    );
 
     if (categoryIndex >= 0) {
       activity.categories[categoryIndex].count += 1;
       activity.categories[categoryIndex].lastPlayed = new Date();
     } else {
-      activity.categories.push({ category, count: 1, lastPlayed: new Date() });
+      activity.categories.push({ 
+        category, 
+        domain,
+        count: 1, 
+        lastPlayed: new Date() 
+      });
     }
 
     await activity.save();
