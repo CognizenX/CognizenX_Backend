@@ -24,7 +24,6 @@ const TriviaCategorySchema = new mongoose.Schema({
   category: { 
     type: String, 
     required: true,
-    unique: true, // Ensures unique categories
     trim: true,
   },
   domain: { 
