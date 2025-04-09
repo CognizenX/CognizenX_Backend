@@ -292,6 +292,38 @@ app.get('/api/random-questions', async (req, res) => {
   }
 });
 
+app.get('/api/users', async (req, res) => {
+  try {
+    const users = await User.find();
+    res.json({users: users});
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ message: 'Failed to fetch users.' });
+  }
+});
+
+app.get('/api/users/:id', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    const userActivities = await UserActivity.findOne({ userId: user._id });
+    
+    // Manually attach "activities" field
+    if (userActivities) {
+      user._doc.activities = userActivities.categories;
+    } else {
+      user._doc.activities = []; // empty if no activity found
+    }
+
+    res.json({user: user});
+  } catch (error) {
+    console.error("Error fetch specific user:", error);
+    res.status(500).json({ message: 'Failed to fetch users.' });
+  }
+})
 
 if (process.env.NODE_ENV !== "test") {
   mongoose
