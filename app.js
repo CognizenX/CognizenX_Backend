@@ -125,31 +125,30 @@ app.get("/api", (req, res) => {
   res.json({ message: "Backend running on Vercel!" });
 });
 
+// Updated Endpoint to Add Questions
 app.post("/api/add-questions", async (req, res, next) => {
-  console.log(req.body);
-
   const { category, domain, questions } = req.body;
+
+  if (!category || !domain || !questions || !Array.isArray(questions)) {
+    return res.status(400).json({
+      status: "error",
+      message: "Invalid data format. Please provide category, domain, and an array of questions.",
+    });
+  }
 
   try {
     let triviaCategory = await Trivia.findOne({ category, domain });
 
     if (!triviaCategory) {
-      triviaCategory = new Trivia({
-        category,
-        domain,
-        questions: [],
-      });
+      triviaCategory = new Trivia({ category, domain, questions: [] });
     }
 
     questions.forEach((question) => {
-      const newQuestion = {
+      triviaCategory.questions.push({
         question: question.question,
         options: question.options,
-        correct_answer: question.correct_answer || question.correctAnswer,
-        subDomain: question.subDomain,
-      };
-
-      triviaCategory.questions.push(newQuestion); // push as object, not string
+        correctAnswer: question.correctAnswer,
+      });
     });
 
     await triviaCategory.save();
@@ -160,11 +159,9 @@ app.post("/api/add-questions", async (req, res, next) => {
       data: triviaCategory,
     });
   } catch (error) {
-    console.error("Error saving questions:", error);
     next(error);
   }
 });
-
 
 //Endpoint for user preferences
 app.get("/api/user-preferences", authMiddleware, async (req, res, next) => {
