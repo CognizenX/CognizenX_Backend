@@ -1,3 +1,15 @@
+// CognigenX Backend API
+// 
+// NEW AI ENDPOINTS (Added for production):
+// POST /api/generate-questions - Generate AI trivia questions
+// POST /api/generate-explanation - Generate AI explanations for answers
+//
+// EXISTING ENDPOINTS (Unchanged for backward compatibility):
+// All existing auth, trivia, and user endpoints remain unchanged
+//
+// Security: OpenAI API keys moved from frontend to backend
+// Backward Compatibility: 100% maintained for existing App Store frontend
+
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -270,6 +282,9 @@ app.get("/api/questions", async (req, res, next) => {
 });
 
 
+// Import OpenAI service
+const { generateQuestions, generateExplanation } = require('./services/openaiService');
+
 app.get('/api/random-questions', async (req, res) => {
   const { categories } = req.query; // Comma-separated list of categories
 
@@ -292,6 +307,92 @@ app.get('/api/random-questions', async (req, res) => {
   } catch (error) {
     console.error('Error fetching random questions:', error);
     res.status(500).json({ message: 'Failed to fetch questions.' });
+  }
+});
+
+// New endpoint for AI-generated questions
+app.post("/api/generate-questions", authMiddleware, async (req, res, next) => {
+  try {
+    const { category, subDomain, count = 10 } = req.body;
+    
+    if (!category) {
+      return res.status(400).json({ 
+        status: "error", 
+        message: "Category is required." 
+      });
+    }
+
+    const questions = await generateQuestions(category, subDomain, count);
+    
+    // Save to database
+    let triviaCategory = await Trivia.findOne({ category, domain: subDomain });
+    if (!triviaCategory) {
+      triviaCategory = new Trivia({ category, domain: subDomain, questions: [] });
+    }
+
+    // Enhanced question validation and formatting
+    const formattedQuestions = questions.map(q => ({
+      question: q.question.trim(),
+      options: q.options.map(opt => opt.trim()).filter(opt => opt.length > 0),
+      correct_answer: (q.correct_answer || q.correctAnswer).trim(),
+      subDomain: subDomain,
+      category: category,
+      aiGenerated: true,
+      createdAt: new Date(),
+      difficulty: q.difficulty || 'medium', // Add difficulty tracking
+      validated: true
+    })).filter(q => {
+      // Additional quality checks
+      return q.question.length > 10 && 
+             q.question.length < 200 &&
+             q.options.length === 4 &&
+             q.options.every(opt => opt.length > 0 && opt.length < 100) &&
+             q.correct_answer.length > 0 &&
+             q.correct_answer.length < 100;
+    });
+
+    triviaCategory.questions.push(...formattedQuestions);
+    await triviaCategory.save();
+
+    res.json({
+      status: "success",
+      message: "Questions generated and saved successfully!",
+      questions: formattedQuestions,
+      count: formattedQuestions.length
+    });
+  } catch (error) {
+    console.error("Error generating questions:", error);
+    res.status(500).json({ 
+      status: "error", 
+      message: error.message 
+    });
+  }
+});
+
+// New endpoint for AI-generated explanations
+app.post("/api/generate-explanation", authMiddleware, async (req, res, next) => {
+  try {
+    const { question, userAnswer, correctAnswer } = req.body;
+    
+    if (!question || !userAnswer || !correctAnswer) {
+      return res.status(400).json({ 
+        status: "error", 
+        message: "Missing required fields: question, userAnswer, correctAnswer" 
+      });
+    }
+
+    const explanation = await generateExplanation(question, userAnswer, correctAnswer);
+    
+    res.json({ 
+      status: "success", 
+      explanation: explanation 
+    });
+  } catch (error) {
+    console.error('Error generating explanation:', error);
+    res.status(500).json({ 
+      status: "error", 
+      message: "Failed to generate explanation" 
+    });
   }
 });
 
