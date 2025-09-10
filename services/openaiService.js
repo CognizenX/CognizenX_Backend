@@ -70,6 +70,10 @@ const generateQuestions = async (category, subDomain, count = 10) => {
 
     const content = completion.choices[0]?.message?.content?.trim();
     
+    if (!content) {
+      throw new Error('No content received from OpenAI');
+    }
+    
     // Clean the response to ensure it's valid JSON
     let cleanedContent = content;
     if (cleanedContent.startsWith("```json")) {
@@ -78,7 +82,32 @@ const generateQuestions = async (category, subDomain, count = 10) => {
       cleanedContent = cleanedContent.replace(/```/g, "").trim();
     }
     
-    const questions = JSON.parse(cleanedContent);
+    // Try to parse the JSON, with better error handling
+    let questions;
+    try {
+      questions = JSON.parse(cleanedContent);
+    } catch (parseError) {
+      console.error('JSON Parse Error:', parseError);
+      console.error('Raw content:', content);
+      console.error('Cleaned content:', cleanedContent);
+      
+      // Try to extract JSON from the response if it contains other text
+      const jsonMatch = cleanedContent.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        try {
+          questions = JSON.parse(jsonMatch[0]);
+        } catch (secondParseError) {
+          throw new Error(`Failed to parse OpenAI response: ${secondParseError.message}`);
+        }
+      } else {
+        throw new Error('OpenAI response does not contain valid JSON array');
+      }
+    }
+    
+    // Ensure we have an array
+    if (!Array.isArray(questions)) {
+      throw new Error('OpenAI response is not an array of questions');
+    }
     
     // Validate question quality
     const validatedQuestions = questions.filter(q => {

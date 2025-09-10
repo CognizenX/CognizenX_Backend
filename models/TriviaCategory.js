@@ -17,6 +17,11 @@ const QuestionSchema = new mongoose.Schema({
     type: String, 
     required: false,
   },
+  // Backward compatibility: support both field names
+  correctAnswer: { 
+    type: String, 
+    required: false,
+  },
   subDomain: { 
     type: String, 
     required: false,
@@ -25,6 +30,23 @@ const QuestionSchema = new mongoose.Schema({
   createdAt: { 
     type: Date, 
     default: Date.now,
+  },
+  // New optional fields for enhanced functionality
+  aiGenerated: { 
+    type: Boolean, 
+    default: false,
+    required: false,
+  },
+  difficulty: { 
+    type: String, 
+    enum: ['easy', 'medium', 'hard'],
+    default: 'medium',
+    required: false,
+  },
+  validated: { 
+    type: Boolean, 
+    default: true,
+    required: false,
   },
 });
 

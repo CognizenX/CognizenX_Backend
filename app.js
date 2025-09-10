@@ -18,7 +18,7 @@ require("dotenv").config();
 
 const axios = require("axios");
 const crypto = require("crypto");
-const Trivia = require("./models/TriviaCategory");
+const TriviaCategory = require("./models/TriviaCategory");
 const UserActivity = require("./models/UserActivity");
 const User = require("./models/User");
 
@@ -144,7 +144,7 @@ app.post("/api/add-questions", async (req, res, next) => {
   const { category, domain, questions } = req.body;
 
   try {
-    let triviaCategory = await Trivia.findOne({ category, domain });
+    let triviaCategory = await TriviaCategory.findOne({ category, domain });
 
     if (!triviaCategory) {
       triviaCategory = new Trivia({
@@ -262,7 +262,7 @@ app.get("/api/questions", async (req, res, next) => {
     });
   }
   try {
-    const triviaCategory = await Trivia.findOne({ category, domain: subDomain });
+    const triviaCategory = await TriviaCategory.findOne({ category, domain: subDomain });
 
     if (!triviaCategory || !triviaCategory.questions.length) {
       return res.status(404).json({
@@ -273,7 +273,16 @@ app.get("/api/questions", async (req, res, next) => {
 
     res.json({
       status: "success",
-      questions: triviaCategory.questions,
+      questions: triviaCategory.questions.map(q => ({
+        ...q.toObject(),
+        // Provide defaults for new fields if they don't exist
+        aiGenerated: q.aiGenerated || false,
+        difficulty: q.difficulty || 'medium',
+        validated: q.validated !== undefined ? q.validated : true,
+        // Ensure both field names exist for compatibility
+        correct_answer: q.correct_answer || q.correctAnswer || '',
+        correctAnswer: q.correct_answer || q.correctAnswer || ''
+      })),
     });
   } catch (error) {
     console.log(error)
@@ -295,15 +304,81 @@ app.get('/api/random-questions', async (req, res) => {
   const categoryList = categories.split(',');
 
   try {
-    // Find questions for the specified categories
-    const questions = await Trivia.aggregate([
-      { $match: { category: { $in: categoryList } } },
-      { $unwind: '$questions' },
-      { $sample: { size: 10 } }, // Select 10 random questions
-      { $project: { _id: 0, question: '$questions' } },
-    ]);
-
-    res.json({ questions: questions.map(q => q.question) });
+    let allQuestions = [];
+    
+    // For each category, get or generate questions
+    for (const category of categoryList) {
+      let triviaCategory = await TriviaCategory.findOne({ category });
+      
+      // If no questions exist for this category, generate them automatically
+      if (!triviaCategory || triviaCategory.questions.length === 0) {
+        console.log(`No questions found for ${category}, generating automatically...`);
+        
+        try {
+          // Generate questions for this category (using a default subdomain)
+          const generatedQuestions = await generateQuestions(category, category, 10);
+          
+          // Create new trivia category with generated questions
+          triviaCategory = new TriviaCategory({ 
+            category, 
+            domain: category, 
+            questions: generatedQuestions.map(q => ({
+              question: q.question.trim(),
+              options: q.options.map(opt => opt.trim()).filter(opt => opt.length > 0),
+              correct_answer: (q.correct_answer || q.correctAnswer || '').trim(),
+              // Backward compatibility: support both field names
+              correctAnswer: (q.correct_answer || q.correctAnswer || '').trim(),
+              subDomain: category,
+              category: category,
+              // New optional fields with defaults
+              aiGenerated: true,
+              createdAt: new Date(),
+              difficulty: q.difficulty || 'medium',
+              validated: true
+            })).filter(q => q.options.length >= 2 && q.question.length > 10)
+          });
+          
+          await triviaCategory.save();
+          console.log(`Generated and saved ${triviaCategory.questions.length} questions for ${category}`);
+        } catch (genError) {
+          console.error(`Failed to generate questions for ${category}:`, genError);
+          continue; // Skip this category if generation fails
+        }
+      }
+      
+      // Add questions from this category to our collection
+      if (triviaCategory && triviaCategory.questions.length > 0) {
+        allQuestions.push(...triviaCategory.questions);
+      }
+    }
+    
+    if (allQuestions.length === 0) {
+      return res.status(404).json({ 
+        message: 'No questions available for the selected categories. Please try different categories.' 
+      });
+    }
+    
+    // Shuffle all questions and select 10 random ones
+    const shuffledQuestions = allQuestions.sort(() => Math.random() - 0.5);
+    const selectedQuestions = shuffledQuestions.slice(0, 10);
+    
+    // Ensure backward compatibility for existing questions
+    const compatibleQuestions = selectedQuestions.map(q => ({
+      ...q.toObject(),
+      // Provide defaults for new fields if they don't exist
+      aiGenerated: q.aiGenerated || false,
+      difficulty: q.difficulty || 'medium',
+      validated: q.validated !== undefined ? q.validated : true,
+      // Ensure both field names exist for compatibility
+      correct_answer: q.correct_answer || q.correctAnswer || '',
+      correctAnswer: q.correct_answer || q.correctAnswer || ''
+    }));
+    
+    res.json({ 
+      questions: compatibleQuestions,
+      totalAvailable: allQuestions.length,
+      generated: compatibleQuestions.filter(q => q.aiGenerated).length
+    });
   } catch (error) {
     console.error('Error fetching random questions:', error);
     res.status(500).json({ message: 'Failed to fetch questions.' });
@@ -314,58 +389,43 @@ app.get('/api/random-questions', async (req, res) => {
 app.post("/api/generate-questions", authMiddleware, async (req, res, next) => {
   try {
     const { category, subDomain, count = 10 } = req.body;
-    
     if (!category) {
-      return res.status(400).json({ 
-        status: "error", 
-        message: "Category is required." 
-      });
+      return res.status(400).json({ status: "error", message: "Category is required" });
     }
-
+    
     const questions = await generateQuestions(category, subDomain, count);
     
-    // Save to database
-    let triviaCategory = await Trivia.findOne({ category, domain: subDomain });
+    let triviaCategory = await TriviaCategory.findOne({ category, domain: subDomain });
     if (!triviaCategory) {
-      triviaCategory = new Trivia({ category, domain: subDomain, questions: [] });
+      triviaCategory = new TriviaCategory({ category, domain: subDomain, questions: [] });
     }
-
-    // Enhanced question validation and formatting
+    
     const formattedQuestions = questions.map(q => ({
       question: q.question.trim(),
       options: q.options.map(opt => opt.trim()).filter(opt => opt.length > 0),
-      correct_answer: (q.correct_answer || q.correctAnswer).trim(),
+      correct_answer: (q.correct_answer || q.correctAnswer || '').trim(),
+      // Backward compatibility: support both field names
+      correctAnswer: (q.correct_answer || q.correctAnswer || '').trim(),
       subDomain: subDomain,
       category: category,
+      // New optional fields with defaults
       aiGenerated: true,
       createdAt: new Date(),
-      difficulty: q.difficulty || 'medium', // Add difficulty tracking
+      difficulty: q.difficulty || 'medium',
       validated: true
-    })).filter(q => {
-      // Additional quality checks
-      return q.question.length > 10 && 
-             q.question.length < 200 &&
-             q.options.length === 4 &&
-             q.options.every(opt => opt.length > 0 && opt.length < 100) &&
-             q.correct_answer.length > 0 &&
-             q.correct_answer.length < 100;
-    });
-
+    })).filter(q => q.options.length >= 2 && q.question.length > 10);
+    
     triviaCategory.questions.push(...formattedQuestions);
     await triviaCategory.save();
-
-    res.json({
-      status: "success",
-      message: "Questions generated and saved successfully!",
-      questions: formattedQuestions,
-      count: formattedQuestions.length
+    
+    res.json({ 
+      status: "success", 
+      message: `Generated ${formattedQuestions.length} questions`,
+      questions: formattedQuestions
     });
   } catch (error) {
-    console.error("Error generating questions:", error);
-    res.status(500).json({ 
-      status: "error", 
-      message: error.message 
-    });
+    console.error('Error generating questions:', error);
+    res.status(500).json({ status: "error", message: "Failed to generate questions" });
   }
 });
 
@@ -373,26 +433,15 @@ app.post("/api/generate-questions", authMiddleware, async (req, res, next) => {
 app.post("/api/generate-explanation", authMiddleware, async (req, res, next) => {
   try {
     const { question, userAnswer, correctAnswer } = req.body;
-    
     if (!question || !userAnswer || !correctAnswer) {
-      return res.status(400).json({ 
-        status: "error", 
-        message: "Missing required fields: question, userAnswer, correctAnswer" 
-      });
+      return res.status(400).json({ status: "error", message: "Question, user answer, and correct answer are required" });
     }
-
-    const explanation = await generateExplanation(question, userAnswer, correctAnswer);
     
-    res.json({ 
-      status: "success", 
-      explanation: explanation 
-    });
+    const explanation = await generateExplanation(question, userAnswer, correctAnswer);
+    res.json({ status: "success", explanation: explanation });
   } catch (error) {
     console.error('Error generating explanation:', error);
-    res.status(500).json({ 
-      status: "error", 
-      message: "Failed to generate explanation" 
-    });
+    res.status(500).json({ status: "error", message: "Failed to generate explanation" });
   }
 });
 
