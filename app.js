@@ -504,8 +504,6 @@ if (process.env.NODE_ENV !== "test") {
 }
 
 
-// Routes
-const authRoutes = require("./routes/auth");
-app.use("/api/auth", authRoutes);
+// Routes already defined above
 
 module.exports = app; // Export app for Vercel, testing
