@@ -21,7 +21,9 @@ const crypto = require("crypto");
 const TriviaCategory = require("./models/TriviaCategory");
 const UserActivity = require("./models/UserActivity");
 const User = require("./models/User");
-const { router: authRoutes, authMiddleware } = require("./routes/auth");
+const authModule = require("./routes/auth");
+const authRoutes = authModule.router;
+const authMiddleware = authModule.authMiddleware;
 
 const app = express();
 
