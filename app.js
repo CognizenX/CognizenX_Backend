@@ -482,14 +482,19 @@ app.get('/api/users/:id', async (req, res) => {
   }
 })
 
+// Connect to MongoDB for all environments except test
 if (process.env.NODE_ENV !== "test") {
+  console.log("Attempting to connect to MongoDB with URI:", MONGO_URI.replace(/\/\/[^:]+:[^@]+@/, "//***:***@")); // Log URI with credentials hidden
   mongoose
   .connect(MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() => console.log("MongoDB Connected"))
-  .catch((err) => console.log(err));
+  .then(() => console.log("MongoDB Connected successfully"))
+  .catch((err) => {
+    console.error("MongoDB Connection Error:", err);
+    console.error("MONGO_URI being used:", MONGO_URI.replace(/\/\/[^:]+:[^@]+@/, "//***:***@"));
+  });
 }
 
 
