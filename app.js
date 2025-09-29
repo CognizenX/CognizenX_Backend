@@ -490,10 +490,14 @@ if (process.env.NODE_ENV !== "test") {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() => console.log("MongoDB Connected successfully"))
+  .then(() => {
+    console.log("MongoDB Connected successfully");
+    console.log("MongoDB connection state:", mongoose.connection.readyState);
+  })
   .catch((err) => {
     console.error("MongoDB Connection Error:", err);
     console.error("MONGO_URI being used:", MONGO_URI.replace(/\/\/[^:]+:[^@]+@/, "//***:***@"));
+    console.error("Error details:", err.message);
   });
 }
 
