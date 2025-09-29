@@ -21,7 +21,7 @@ const crypto = require("crypto");
 const TriviaCategory = require("./models/TriviaCategory");
 const UserActivity = require("./models/UserActivity");
 const User = require("./models/User");
-const authRoutes = require("./routes/auth");
+const { router: authRoutes, authMiddleware } = require("./routes/auth");
 
 const app = express();
 
@@ -35,37 +35,6 @@ app.use("/api/auth", authRoutes);
 // Database connection string: use env or default to original hosting URL
 const DEFAULT_MONGO_URI = "mongodb+srv://cognizennet:cognizennet@triviaquestions.gfew0.mongodb.net/?retryWrites=true&w=majority&appName=TriviaQuestions";
 const MONGO_URI = process.env.MONGO_URL || process.env.MONGO_URI || process.env.MONGODB_URI || process.env.DATABASE_URL || DEFAULT_MONGO_URI;
-
-const authMiddleware = async (req, res, next) => {
-  const authorizationHeader = req.header("Authorization");
-  console.log("Authorization Header:", authorizationHeader); // Log header
-
-  if (!authorizationHeader) {
-    return res.status(401).json({ message: "Unauthorized: Missing Authorization header" });
-  }
-
-  const sessionToken = authorizationHeader.replace("Bearer ", "").trim();
-  console.log("Session Token:", sessionToken); // Log token
-
-  if (!sessionToken) {
-    return res.status(401).json({ message: "Unauthorized: Missing session token" });
-  }
-
-  try {
-    const user = await User.findOne({ sessionToken });
-    console.log("User Found:", user); // Log user data
-
-    if (!user) {
-      return res.status(401).json({ message: "Unauthorized: Invalid session token" });
-    }
-
-    req.user = user; // Attach user to request object
-    next();
-  } catch (err) {
-    console.error("Error in authMiddleware:", err);
-    res.status(500).json({ message: "Internal Server Error" });
-  }
-};
 
 
 
