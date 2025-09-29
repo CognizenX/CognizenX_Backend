@@ -484,20 +484,47 @@ app.get('/api/users/:id', async (req, res) => {
 
 // Connect to MongoDB for all environments except test
 if (process.env.NODE_ENV !== "test") {
-  console.log("Attempting to connect to MongoDB with URI:", MONGO_URI.replace(/\/\/[^:]+:[^@]+@/, "//***:***@")); // Log URI with credentials hidden
+  console.log("=== MONGODB CONNECTION DEBUG ===");
+  console.log("NODE_ENV:", process.env.NODE_ENV);
+  console.log("MONGO_URI from env:", process.env.MONGO_URI ? "SET" : "NOT SET");
+  console.log("Using MONGO_URI:", MONGO_URI.replace(/\/\/[^:]+:[^@]+@/, "//***:***@"));
+  console.log("Mongoose version:", mongoose.version);
+  
   mongoose
   .connect(MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 10000, // 10 seconds
+    socketTimeoutMS: 45000, // 45 seconds
+    bufferCommands: false,
+    bufferMaxEntries: 0,
+    maxPoolSize: 10,
+    minPoolSize: 5,
+    maxIdleTimeMS: 30000,
+    authSource: 'admin'
   })
   .then(() => {
-    console.log("MongoDB Connected successfully");
+    console.log("✅ MongoDB Connected successfully");
     console.log("MongoDB connection state:", mongoose.connection.readyState);
+    console.log("MongoDB host:", mongoose.connection.host);
+    console.log("MongoDB port:", mongoose.connection.port);
+    console.log("MongoDB name:", mongoose.connection.name);
   })
   .catch((err) => {
-    console.error("MongoDB Connection Error:", err);
+    console.error("❌ MongoDB Connection Error:", err);
+    console.error("Error name:", err.name);
+    console.error("Error message:", err.message);
+    console.error("Error code:", err.code);
     console.error("MONGO_URI being used:", MONGO_URI.replace(/\/\/[^:]+:[^@]+@/, "//***:***@"));
-    console.error("Error details:", err.message);
+    
+    // Check for specific error types
+    if (err.name === 'MongoServerSelectionError') {
+      console.error("🔍 Server Selection Error - Check network access and IP whitelisting");
+    } else if (err.name === 'MongoAuthenticationError') {
+      console.error("🔍 Authentication Error - Check username/password and authSource");
+    } else if (err.name === 'MongoNetworkError') {
+      console.error("🔍 Network Error - Check connection string and network access");
+    }
   });
 }
 
