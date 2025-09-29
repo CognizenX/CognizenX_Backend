@@ -496,7 +496,7 @@ if (process.env.NODE_ENV !== "test") {
     useUnifiedTopology: true,
     serverSelectionTimeoutMS: 10000, // 10 seconds
     socketTimeoutMS: 45000, // 45 seconds
-    bufferCommands: false,
+    bufferCommands: true, // Allow buffering for serverless
     bufferMaxEntries: 0,
     maxPoolSize: 10,
     minPoolSize: 5,
