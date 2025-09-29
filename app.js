@@ -30,7 +30,7 @@ app.use(bodyParser.json());
 
 // Database connection string: use env or default to original hosting URL
 const DEFAULT_MONGO_URI = "mongodb+srv://cognizennet:cognizennet@triviaquestions.gfew0.mongodb.net/?retryWrites=true&w=majority&appName=TriviaQuestions";
-const MONGO_URI = process.env.MONGO_URI || process.env.MONGO_URL || process.env.MONGODB_URI || process.env.DATABASE_URL || DEFAULT_MONGO_URI;
+const MONGO_URI = process.env.MONGO_URL || process.env.MONGO_URI || process.env.MONGODB_URI || process.env.DATABASE_URL || DEFAULT_MONGO_URI;
 
 const authMiddleware = async (req, res, next) => {
   const authorizationHeader = req.header("Authorization");
@@ -500,7 +500,6 @@ if (process.env.NODE_ENV !== "test") {
     serverSelectionTimeoutMS: 10000, // 10 seconds
     socketTimeoutMS: 45000, // 45 seconds
     bufferCommands: true, // Allow buffering for serverless
-    bufferMaxEntries: 0,
     maxPoolSize: 10,
     minPoolSize: 5,
     maxIdleTimeMS: 30000,
