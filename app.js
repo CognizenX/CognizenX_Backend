@@ -29,7 +29,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Database connection string: use env or default to original hosting URL
-const DEFAULT_MONGO_URI = "mongodb+srv://cognizennet:cognizennet@triviaquestions.gfew0.mongodb.net/dementia_database?retryWrites=true&w=majority&appName=TriviaQuestions";
+const DEFAULT_MONGO_URI = "mongodb+srv://cognizennet:cognizennet@triviaquestions.gfew0.mongodb.net/?retryWrites=true&w=majority&appName=TriviaQuestions";
 const MONGO_URI = process.env.MONGO_URI || DEFAULT_MONGO_URI;
 
 const authMiddleware = async (req, res, next) => {
