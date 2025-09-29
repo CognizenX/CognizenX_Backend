@@ -56,6 +56,12 @@ router.post("/signup", async (req, res) => {
   try {
     console.log("Signup Password Input:", password);
 
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User with this email already exists" });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     console.log("Hashed Password for Signup:", hashedPassword);
 
@@ -69,9 +75,13 @@ router.post("/signup", async (req, res) => {
     });
 
     await newUser.save();
+    console.log("User created successfully:", newUser.email);
     res.status(201).json({ sessionToken });
   } catch (err) {
     console.error("Signup Error:", err);
+    if (err.code === 11000) {
+      return res.status(400).json({ message: "User with this email already exists" });
+    }
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
@@ -80,7 +90,7 @@ router.post("/login", async (req, res) => {
 
   try {
     const user = await User.findOne({ email });
-    console.log("User Found:", user);
+    console.log("User Found:", user ? "Yes" : "No");
 
     if (!user) return res.status(400).json({ message: "User not found" });
 
