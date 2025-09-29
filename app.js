@@ -30,7 +30,7 @@ app.use(bodyParser.json());
 
 // Database connection string: use env or default to original hosting URL
 const DEFAULT_MONGO_URI = "mongodb+srv://cognizennet:cognizennet@triviaquestions.gfew0.mongodb.net/?retryWrites=true&w=majority&appName=TriviaQuestions";
-const MONGO_URI = process.env.MONGO_URI || DEFAULT_MONGO_URI;
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGO_URL || process.env.MONGODB_URI || process.env.DATABASE_URL || DEFAULT_MONGO_URI;
 
 const authMiddleware = async (req, res, next) => {
   const authorizationHeader = req.header("Authorization");
@@ -487,6 +487,9 @@ if (process.env.NODE_ENV !== "test") {
   console.log("=== MONGODB CONNECTION DEBUG ===");
   console.log("NODE_ENV:", process.env.NODE_ENV);
   console.log("MONGO_URI from env:", process.env.MONGO_URI ? "SET" : "NOT SET");
+  console.log("MONGO_URL from env:", process.env.MONGO_URL ? "SET" : "NOT SET");
+  console.log("MONGODB_URI from env:", process.env.MONGODB_URI ? "SET" : "NOT SET");
+  console.log("DATABASE_URL from env:", process.env.DATABASE_URL ? "SET" : "NOT SET");
   console.log("Using MONGO_URI:", MONGO_URI.replace(/\/\/[^:]+:[^@]+@/, "//***:***@"));
   console.log("Mongoose version:", mongoose.version);
   
