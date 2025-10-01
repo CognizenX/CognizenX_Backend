@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 // Replace with your MongoDB Atlas connection string
-const uri = "mongodb+srv://cognizennet:cognizennet@triviaquestions.gfew0.mongodb.net/?retryWrites=true&w=majority&appName=TriviaQuestions";
+const uri = "mongodb+srv://cognizennet:lifeisgood8199@triviaquestions.gfew0.mongodb.net/?retryWrites=true&w=majority&appName=TriviaQuestions";
 const sourceDB = "TriviaQuestions";
 const targetDB = "dementia_database";
 const collectionName = "triviacategories";

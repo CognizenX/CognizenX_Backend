@@ -21,9 +21,6 @@ const crypto = require("crypto");
 const TriviaCategory = require("./models/TriviaCategory");
 const UserActivity = require("./models/UserActivity");
 const User = require("./models/User");
-const authModule = require("./routes/auth");
-const authRoutes = authModule.router;
-const authMiddleware = authModule.authMiddleware;
 
 const app = express();
 
@@ -31,12 +28,40 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// Routes
-app.use("/api/auth", authRoutes);
-
 // Database connection string: use env or default to original hosting URL
-const DEFAULT_MONGO_URI = "mongodb+srv://cognizennet:cognizennet@triviaquestions.gfew0.mongodb.net/?retryWrites=true&w=majority&appName=TriviaQuestions";
-const MONGO_URI = process.env.MONGO_URL || process.env.MONGO_URI || process.env.MONGODB_URI || process.env.DATABASE_URL || DEFAULT_MONGO_URI;
+const DEFAULT_MONGO_URI = "mongodb+srv://cognizennet:lifeisgood8199@triviaquestions.gfew0.mongodb.net/?retryWrites=true&w=majority&appName=TriviaQuestions";
+const MONGO_URI = process.env.MONGO_URI || DEFAULT_MONGO_URI;
+
+const authMiddleware = async (req, res, next) => {
+  const authorizationHeader = req.header("Authorization");
+  console.log("Authorization Header:", authorizationHeader); // Log header
+
+  if (!authorizationHeader) {
+    return res.status(401).json({ message: "Unauthorized: Missing Authorization header" });
+  }
+
+  const sessionToken = authorizationHeader.replace("Bearer ", "").trim();
+  console.log("Session Token:", sessionToken); // Log token
+
+  if (!sessionToken) {
+    return res.status(401).json({ message: "Unauthorized: Missing session token" });
+  }
+
+  try {
+    const user = await User.findOne({ sessionToken });
+    console.log("User Found:", user); // Log user data
+
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized: Invalid session token" });
+    }
+
+    req.user = user; // Attach user to request object
+    next();
+  } catch (err) {
+    console.error("Error in authMiddleware:", err);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
 
 
 
@@ -457,55 +482,19 @@ app.get('/api/users/:id', async (req, res) => {
   }
 })
 
-// Connect to MongoDB for all environments except test
 if (process.env.NODE_ENV !== "test") {
-  console.log("=== MONGODB CONNECTION DEBUG ===");
-  console.log("NODE_ENV:", process.env.NODE_ENV);
-  console.log("MONGO_URI from env:", process.env.MONGO_URI ? "SET" : "NOT SET");
-  console.log("MONGO_URL from env:", process.env.MONGO_URL ? "SET" : "NOT SET");
-  console.log("MONGODB_URI from env:", process.env.MONGODB_URI ? "SET" : "NOT SET");
-  console.log("DATABASE_URL from env:", process.env.DATABASE_URL ? "SET" : "NOT SET");
-  console.log("Using MONGO_URI:", MONGO_URI.replace(/\/\/[^:]+:[^@]+@/, "//***:***@"));
-  console.log("Mongoose version:", mongoose.version);
-  
   mongoose
   .connect(MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 10000, // 10 seconds
-    socketTimeoutMS: 45000, // 45 seconds
-    bufferCommands: true, // Allow buffering for serverless
-    maxPoolSize: 10,
-    minPoolSize: 5,
-    maxIdleTimeMS: 30000,
-    authSource: 'admin'
   })
-  .then(() => {
-    console.log("✅ MongoDB Connected successfully");
-    console.log("MongoDB connection state:", mongoose.connection.readyState);
-    console.log("MongoDB host:", mongoose.connection.host);
-    console.log("MongoDB port:", mongoose.connection.port);
-    console.log("MongoDB name:", mongoose.connection.name);
-  })
-  .catch((err) => {
-    console.error("❌ MongoDB Connection Error:", err);
-    console.error("Error name:", err.name);
-    console.error("Error message:", err.message);
-    console.error("Error code:", err.code);
-    console.error("MONGO_URI being used:", MONGO_URI.replace(/\/\/[^:]+:[^@]+@/, "//***:***@"));
-    
-    // Check for specific error types
-    if (err.name === 'MongoServerSelectionError') {
-      console.error("🔍 Server Selection Error - Check network access and IP whitelisting");
-    } else if (err.name === 'MongoAuthenticationError') {
-      console.error("🔍 Authentication Error - Check username/password and authSource");
-    } else if (err.name === 'MongoNetworkError') {
-      console.error("🔍 Network Error - Check connection string and network access");
-    }
-  });
+  .then(() => console.log("MongoDB Connected"))
+  .catch((err) => console.log(err));
 }
 
 
-// Routes already defined above
+// Routes
+const authRoutes = require("./routes/auth");
+app.use("/api/auth", authRoutes);
 
 module.exports = app; // Export app for Vercel, testing
