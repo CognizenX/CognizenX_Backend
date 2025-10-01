@@ -1,6 +1,5 @@
 const app = require("./app");
 
-const PORT = process.env.PORT || 6000;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Export the Express app for Vercel's serverless environment.
+// Local development should start the server via a separate script if needed.
+module.exports = app;
