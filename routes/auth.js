@@ -1,8 +1,21 @@
 const express = require("express");
 const crypto = require("crypto"); // Import the crypto module
 const bcrypt = require("bcryptjs");
+const Joi = require('joi');
 const User = require("../models/User");
 const UserActivity = require('../models/UserActivity');
+
+// Input validation schemas
+const signupSchema = Joi.object({
+  name: Joi.string().min(2).max(50).pattern(/^[a-zA-Z\s]+$/).required(),
+  email: Joi.string().email().max(100).required(),
+  password: Joi.string().min(8).max(128).pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).required()
+});
+
+const loginSchema = Joi.object({
+  email: Joi.string().email().max(100).required(),
+  password: Joi.string().required()
+});
 
 
 const router = express.Router();
@@ -24,18 +37,23 @@ const authMiddleware = async (req, res, next) => {
   }
 
   try {
-    const user = await User.findOne({ sessionToken });
-    console.log("User Found:", user); // Log the user object or null if not found
+    const user = await User.findOne({
+      sessionToken,
+      $or: [
+        { tokenExpiresAt: null }, // No expiration set (legacy tokens)
+        { tokenExpiresAt: { $gt: new Date() } } // Token not expired
+      ]
+    });
 
     if (!user) {
-      return res.status(401).json({ message: "Unauthorized: Invalid session token" });
+      return res.status(401).json({ message: "Unauthorized: Invalid or expired session token" });
     }
 
     req.user = user; // Attach user to request
     next();
   } catch (err) {
     console.error("Error in authMiddleware:", err);
-    res.status(500).json({ message: "Internal Server Error" });
+    throw err; // Let centralized error handler deal with it
   }
 };
 
@@ -51,52 +69,79 @@ router.get("/get-user-id", authMiddleware, async (req, res) => {
   }
 });
 router.post("/signup", async (req, res) => {
-  const { name, email, password } = req.body;
-
   try {
-    // Validate basic payload
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: "name, email, and password are required" });
+    // Validate input using Joi schema
+    const { error, value } = signupSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({
+        message: 'Validation error',
+        details: error.details.map(detail => ({
+          field: detail.path.join('.'),
+          message: detail.message
+        }))
+      });
     }
 
-    // Enforce unique email with friendly error
+    const { name, email, password } = value;
+
+    console.log("Signup attempt for email:", email);
+
+    // Check for existing user (this will throw duplicate key error if race condition)
     const existing = await User.findOne({ email });
     if (existing) {
       return res.status(409).json({ message: "Email already in use" });
     }
-    console.log("Signup Password Input:", password);
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    console.log("Hashed Password for Signup:", hashedPassword);
 
     const sessionToken = crypto.randomBytes(64).toString("hex");
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
     const newUser = new User({
       name,
       email,
       password: hashedPassword,
       sessionToken,
+      tokenExpiresAt: expiresAt
     });
 
     await newUser.save();
-    res.status(201).json({ sessionToken });
+    console.log("User created successfully:", email);
+
+    res.status(201).json({
+      sessionToken,
+      expiresAt,
+      message: "Account created successfully"
+    });
   } catch (err) {
     console.error("Signup Error:", err);
-    // Handle duplicate key just in case race condition
-    if (err && err.code === 11000) {
-      return res.status(409).json({ message: "Email already in use" });
-    }
-    res.status(500).json({ message: "Internal Server Error" });
+    // Let the centralized error handler deal with it
+    throw err;
   }
 });
 router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
-
   try {
-    const user = await User.findOne({ email });
-    console.log("User Found:", user);
+    // Validate input using Joi schema
+    const { error, value } = loginSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({
+        message: 'Validation error',
+        details: error.details.map(detail => ({
+          field: detail.path.join('.'),
+          message: detail.message
+        }))
+      });
+    }
 
-    if (!user) return res.status(400).json({ message: "User not found" });
+    const { email, password } = value;
+
+    console.log("Login attempt for email:", email);
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
 
     console.log("Plain Password Input:", password);
     console.log("Hashed Password in DB:", user.password);
@@ -104,17 +149,27 @@ router.post("/login", async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     console.log("Password Match:", isMatch);
 
-    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
 
     const sessionToken = crypto.randomBytes(64).toString("hex");
-    user.sessionToken = sessionToken;
-    await user.save();
-    console.log("Session Token Saved:", sessionToken);
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-    res.json({ sessionToken });
+    user.sessionToken = sessionToken;
+    user.tokenExpiresAt = expiresAt;
+    await user.save();
+
+    console.log("User logged in successfully:", email);
+
+    res.json({
+      sessionToken,
+      expiresAt,
+      message: "Login successful"
+    });
   } catch (err) {
     console.error("Login Error:", err);
-    res.status(500).json({ message: "Internal Server Error" });
+    throw err; // Let centralized error handler deal with it
   }
 });
 
@@ -131,10 +186,11 @@ router.delete("/delete-account", authMiddleware, async (req, res) => {
 
     // 3) (Optionally) You could also revoke tokens, clear cookies, etc.
 
+    console.log("Account deleted successfully for user:", userId);
     res.json({ message: "Account deleted successfully." });
   } catch (err) {
     console.error("Error deleting account:", err);
-    res.status(500).json({ message: "Internal Server Error" });
+    throw err; // Let centralized error handler deal with it
   }
 });
 

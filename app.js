@@ -14,6 +14,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+const Joi = require('joi');
 require("dotenv").config();
 
 const axios = require("axios");
@@ -24,9 +25,94 @@ const User = require("./models/User");
 
 const app = express();
 
+// Security middleware
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+
 // Middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+    },
+  },
+}));
 app.use(cors());
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '10mb' }));
+
+// Rate limiting for auth endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 requests per windowMs for auth routes
+  message: {
+    message: 'Too many authentication attempts from this IP, please try again after 15 minutes.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Global rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use('/api/auth', authLimiter);
+app.use(limiter);
+
+// Input validation schemas
+const signupSchema = Joi.object({
+  name: Joi.string().min(2).max(50).pattern(/^[a-zA-Z\s]+$/).required(),
+  email: Joi.string().email().max(100).required(),
+  password: Joi.string().min(8).max(128).pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).required()
+});
+
+const loginSchema = Joi.object({
+  email: Joi.string().email().max(100).required(),
+  password: Joi.string().required()
+});
+
+// Centralized error handling middleware
+const errorHandler = (err, req, res, next) => {
+  console.error('Unhandled error:', err);
+
+  // Mongoose duplicate key error
+  if (err.code === 11000) {
+    const field = Object.keys(err.keyValue)[0];
+    return res.status(409).json({
+      message: `${field} already exists`,
+      field: field
+    });
+  }
+
+  // Joi validation error
+  if (err.isJoi) {
+    return res.status(400).json({
+      message: 'Validation error',
+      details: err.details.map(detail => ({
+        field: detail.path.join('.'),
+        message: detail.message
+      }))
+    });
+  }
+
+  // MongoDB connection errors
+  if (err.name === 'MongoNetworkError' || err.name === 'MongoTimeoutError') {
+    return res.status(503).json({
+      message: 'Database temporarily unavailable'
+    });
+  }
+
+  res.status(500).json({
+    message: 'Internal server error',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+  });
+};
 
 // Database connection string: use environment variables only (no hardcoded fallback)
 const MONGO_URI = process.env.MONGO_URI || process.env.MONGO_URL;
@@ -356,8 +442,11 @@ app.get('/api/random-questions', async (req, res) => {
     }
     
     if (allQuestions.length === 0) {
-      return res.status(404).json({ 
-        message: 'No questions available for the selected categories. Please try different categories.' 
+      return res.status(200).json({
+        questions: [],
+        totalAvailable: 0,
+        generated: 0,
+        message: 'No questions available for the selected categories. Please try different categories.'
       });
     }
     
@@ -496,5 +585,8 @@ if (process.env.NODE_ENV !== "test") {
 // Routes
 const authRoutes = require("./routes/auth");
 app.use("/api/auth", authRoutes);
+
+// Error handling middleware (must be last)
+app.use(errorHandler);
 
 module.exports = app; // Export app for Vercel, testing

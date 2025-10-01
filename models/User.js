@@ -4,7 +4,8 @@ const UserSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    sessionToken: { type: String, required: false }, 
+    sessionToken: { type: String, required: false },
+    tokenExpiresAt: { type: Date, default: null },
 });
 
 // Encrypt password before saving
