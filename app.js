@@ -28,9 +28,8 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// Database connection string: prefer env var, support both MONGO_URI and MONGO_URL
-const DEFAULT_MONGO_URI = "mongodb+srv://cognizennet:lifeisgood8199@triviaquestions.gfew0.mongodb.net/?retryWrites=true&w=majority&appName=TriviaQuestions";
-const MONGO_URI = process.env.MONGO_URI || process.env.MONGO_URL || DEFAULT_MONGO_URI;
+// Database connection string: use environment variables only (no hardcoded fallback)
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGO_URL;
 
 const authMiddleware = async (req, res, next) => {
   const authorizationHeader = req.header("Authorization");
@@ -483,10 +482,14 @@ app.get('/api/users/:id', async (req, res) => {
 })
 
 if (process.env.NODE_ENV !== "test") {
-  mongoose
-  .connect(MONGO_URI)
-  .then(() => console.log("MongoDB Connected"))
-  .catch((err) => console.log(err));
+  if (!MONGO_URI) {
+    console.error("MongoDB connection string missing: set MONGO_URI (or MONGO_URL)");
+  } else {
+    mongoose
+      .connect(MONGO_URI)
+      .then(() => console.log("MongoDB Connected"))
+      .catch((err) => console.log(err));
+  }
 }
 
 
