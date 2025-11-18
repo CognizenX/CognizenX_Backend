@@ -55,8 +55,6 @@ router.post("/signup", async (req, res) => {
   const { name, email, password } = req.body;
 
   try {
-    console.log("Signup Password Input:", password);
-
     const hashedPassword = await bcrypt.hash(password, 10);
     console.log("Hashed Password for Signup:", hashedPassword);
 
@@ -85,7 +83,6 @@ router.post("/login", async (req, res) => {
 
     if (!user) return res.status(400).json({ message: "User not found" });
 
-    console.log("Plain Password Input:", password);
     console.log("Hashed Password in DB:", user.password);
 
     const isMatch = await bcrypt.compare(password, user.password);
