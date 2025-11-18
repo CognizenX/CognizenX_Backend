@@ -48,6 +48,16 @@ const QuestionSchema = new mongoose.Schema({
     default: true,
     required: false,
   },
+  // Cache explanations to avoid regenerating them
+  explanation: {
+    type: String,
+    required: false,
+    trim: true,
+  },
+  explanationGeneratedAt: {
+    type: Date,
+    required: false,
+  },
 });
 
 // Define the schema for trivia categories and associated questions
