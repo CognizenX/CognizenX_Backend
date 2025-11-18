@@ -7,9 +7,20 @@ const openai = new OpenAI({
 
 const generateQuestions = async (category, subDomain, count = 10) => {
   try {
+    // Check if OpenAI API key is configured and valid
+    if (!process.env.OPENAI_API_KEY || 
+        process.env.OPENAI_API_KEY === 'sk-your-openai-api-key-here' ||
+        process.env.OPENAI_API_KEY.trim().length < 20) {
+      throw new Error('OpenAI API key is not configured. Please set OPENAI_API_KEY in your .env file.');
+    }
+    
+    // Normalize category and subDomain to lowercase for template matching
+    const normalizedCategory = category?.toLowerCase();
+    const normalizedSubDomain = subDomain?.toLowerCase();
+    
     // Get relevant topics and examples for better context
-    const relevantTopics = getRelevantTopics(category, subDomain);
-    const exampleQuestions = getExampleQuestions(category, subDomain);
+    const relevantTopics = getRelevantTopics(normalizedCategory, normalizedSubDomain);
+    const exampleQuestions = getExampleQuestions(normalizedCategory, normalizedSubDomain);
     
     // Enhanced prompt for more relevant and meaningful questions
     const prompt = `Generate ${count} high-quality, relevant trivia questions about ${subDomain || category}.
@@ -22,9 +33,9 @@ const generateQuestions = async (category, subDomain, count = 10) => {
     5. Avoid overly obscure or trivial facts
     6. Focus on interesting, memorable information
     
-    SPECIFIC TOPICS TO COVER: ${relevantTopics.join(', ')}
+    ${relevantTopics.length > 0 ? `SPECIFIC TOPICS TO COVER: ${relevantTopics.join(', ')}` : ''}
     
-    EXAMPLE QUESTIONS FOR REFERENCE: ${exampleQuestions.join(' | ')}
+    ${exampleQuestions.length > 0 ? `EXAMPLE QUESTIONS FOR REFERENCE: ${exampleQuestions.join(' | ')}` : ''}
     
     CONTEXT-SPECIFIC EXAMPLES:
     - If category is "politics" and subDomain is "National": Focus on Indian national politics, government, constitution
@@ -65,7 +76,7 @@ const generateQuestions = async (category, subDomain, count = 10) => {
         }
       ],
       temperature: 0.3, // Lower temperature for more consistent, focused questions
-      max_tokens: 2000,
+      max_tokens: 1200, // Reduced to ~120 tokens per question (10 questions) - safer for quota limits
     });
 
     const content = completion.choices[0]?.message?.content?.trim();
@@ -109,15 +120,28 @@ const generateQuestions = async (category, subDomain, count = 10) => {
       throw new Error('OpenAI response is not an array of questions');
     }
     
-    // Validate question quality
+    // Validate question quality - more lenient validation
     const validatedQuestions = questions.filter(q => {
-      return q.question && 
-             q.options && 
-             q.options.length === 4 && 
-             q.correct_answer && 
-             q.options.includes(q.correct_answer) &&
-             q.question.toLowerCase().includes(category.toLowerCase()) ||
-             q.question.toLowerCase().includes((subDomain || category).toLowerCase());
+      if (!q.question || !q.options || !q.correct_answer) {
+        return false;
+      }
+      
+      // Check if options is an array and has at least 2 options
+      if (!Array.isArray(q.options) || q.options.length < 2) {
+        return false;
+      }
+      
+      // Check if correct answer is in options
+      if (!q.options.includes(q.correct_answer)) {
+        return false;
+      }
+      
+      // Check minimum question length
+      if (q.question.trim().length < 10) {
+        return false;
+      }
+      
+      return true;
     });
     
     if (validatedQuestions.length === 0) {
@@ -129,12 +153,36 @@ const generateQuestions = async (category, subDomain, count = 10) => {
     
   } catch (error) {
     console.error('OpenAI API Error:', error);
-    throw new Error(`Failed to generate questions: ${error.message}`);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      category,
+      subDomain,
+      count
+    });
+    
+    // Provide more specific error messages
+    if (error.message?.includes('API key')) {
+      throw new Error('OpenAI API key is invalid or missing. Please check your configuration.');
+    } else if (error.message?.includes('rate limit')) {
+      throw new Error('OpenAI API rate limit exceeded. Please try again later.');
+    } else if (error.message?.includes('insufficient_quota')) {
+      throw new Error('OpenAI API quota exceeded. Please check your account billing.');
+    } else {
+      throw new Error(`Failed to generate questions: ${error.message}`);
+    }
   }
 };
 
 const generateExplanation = async (question, userAnswer, correctAnswer) => {
   try {
+    // Check if OpenAI API key is configured and valid
+    if (!process.env.OPENAI_API_KEY || 
+        process.env.OPENAI_API_KEY === 'sk-your-openai-api-key-here' ||
+        process.env.OPENAI_API_KEY.trim().length < 20) {
+      throw new Error('OpenAI API key is not configured. Please set OPENAI_API_KEY in your .env file.');
+    }
+    
     const prompt = `Provide a concise 3-line explanation for the following trivia question: "${question}". 
 User's answer: "${userAnswer}".
 Correct answer: "${correctAnswer}".
@@ -153,7 +201,7 @@ Explain why the correct answer is correct and provide brief context. Keep it sim
         }
       ],
       temperature: 0.3,
-      max_tokens: 150,
+      max_tokens: 100, // Reduced from 150 to be safer with limited quota
     });
 
     const content = completion.choices[0]?.message?.content?.trim();
@@ -164,7 +212,22 @@ Explain why the correct answer is correct and provide brief context. Keep it sim
     return content;
   } catch (error) {
     console.error('OpenAI API Error:', error);
-    throw new Error('Failed to generate explanation');
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      question: question?.substring(0, 50) + '...'
+    });
+    
+    // Provide more specific error messages
+    if (error.message?.includes('API key') || error.status === 401) {
+      throw new Error('OpenAI API key is invalid or missing. Please check your configuration.');
+    } else if (error.message?.includes('rate limit') || error.status === 429) {
+      throw new Error('OpenAI API rate limit exceeded. Please try again later.');
+    } else if (error.message?.includes('insufficient_quota') || error.message?.includes('quota')) {
+      throw new Error('OpenAI API quota exceeded. Please check your account billing.');
+    } else {
+      throw new Error(`Failed to generate explanation: ${error.message}`);
+    }
   }
 };
 

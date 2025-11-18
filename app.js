@@ -22,6 +22,7 @@ const crypto = require("crypto");
 const TriviaCategory = require("./models/TriviaCategory");
 const UserActivity = require("./models/UserActivity");
 const User = require("./models/User");
+// Unified auth middleware (imported after User model)
 
 const app = express();
 
@@ -44,22 +45,39 @@ app.use(cors());
 app.use(bodyParser.json({ limit: '10mb' }));
 
 // Rate limiting for auth endpoints
+// More lenient in development, stricter in production
+const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV !== 'production';
+
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 requests per windowMs for auth routes
+  max: isDevelopment ? 50 : 5, // More lenient in development (50 vs 5)
   message: {
     message: 'Too many authentication attempts from this IP, please try again after 15 minutes.'
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    // Skip rate limiting for localhost in development
+    if (isDevelopment && (req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1')) {
+      return true;
+    }
+    return false;
+  }
 });
 
 // Global rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: isDevelopment ? 1000 : 100, // More lenient in development
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    // Skip rate limiting for localhost in development
+    if (isDevelopment && (req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1')) {
+      return true;
+    }
+    return false;
+  }
 });
 
 app.use('/api/auth', authLimiter);
@@ -69,7 +87,7 @@ app.use(limiter);
 const signupSchema = Joi.object({
   name: Joi.string().min(2).max(50).pattern(/^[a-zA-Z\s]+$/).required(),
   email: Joi.string().email().max(100).required(),
-  password: Joi.string().min(8).max(128).pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).required()
+  password: Joi.string().min(6).max(128).required() // Simple password - just min 6 chars, no complexity required
 });
 
 const loginSchema = Joi.object({
@@ -117,36 +135,8 @@ const errorHandler = (err, req, res, next) => {
 // Database connection string: use environment variables only (no hardcoded fallback)
 const MONGO_URI = process.env.MONGO_URI || process.env.MONGO_URL;
 
-const authMiddleware = async (req, res, next) => {
-  const authorizationHeader = req.header("Authorization");
-  console.log("Authorization Header:", authorizationHeader); // Log header
-
-  if (!authorizationHeader) {
-    return res.status(401).json({ message: "Unauthorized: Missing Authorization header" });
-  }
-
-  const sessionToken = authorizationHeader.replace("Bearer ", "").trim();
-  console.log("Session Token:", sessionToken); // Log token
-
-  if (!sessionToken) {
-    return res.status(401).json({ message: "Unauthorized: Missing session token" });
-  }
-
-  try {
-    const user = await User.findOne({ sessionToken });
-    console.log("User Found:", user); // Log user data
-
-    if (!user) {
-      return res.status(401).json({ message: "Unauthorized: Invalid session token" });
-    }
-
-    req.user = user; // Attach user to request object
-    next();
-  } catch (err) {
-    console.error("Error in authMiddleware:", err);
-    res.status(500).json({ message: "Internal Server Error" });
-  }
-};
+// Use unified authentication middleware
+const authMiddleware = require("./middleware/auth");
 
 
 
@@ -384,7 +374,7 @@ app.get("/api/questions", async (req, res, next) => {
 const { generateQuestions, generateExplanation } = require('./services/openaiService');
 
 app.get('/api/random-questions', async (req, res) => {
-  const { categories } = req.query; // Comma-separated list of categories
+  const { categories, subDomain } = req.query; // Comma-separated list of categories, optional subDomain
 
   if (!categories) {
     return res.status(400).json({ message: 'Categories are required.' });
@@ -395,49 +385,87 @@ app.get('/api/random-questions', async (req, res) => {
   try {
     let allQuestions = [];
     
-    // For each category, get or generate questions
+    // For each category, get questions (filtered by subDomain if provided)
     for (const category of categoryList) {
-      let triviaCategory = await TriviaCategory.findOne({ category });
+      // Build query - if subDomain provided, filter by both category and domain
+      const query = subDomain 
+        ? { category, domain: subDomain }
+        : { category };
       
-      // If no questions exist for this category, generate them automatically
+      let triviaCategory = await TriviaCategory.findOne(query);
+      
+      // If no questions exist for this category/subDomain, try to find any questions for the category
+      // (to avoid auto-generating if questions exist for other subDomains)
       if (!triviaCategory || triviaCategory.questions.length === 0) {
-        console.log(`No questions found for ${category}, generating automatically...`);
+        // If subDomain was specified but no questions found, don't auto-generate
+        // Let the user generate questions explicitly via /api/generate-questions
+        if (subDomain) {
+          console.log(`No questions found for ${category}/${subDomain}, skipping...`);
+          continue;
+        }
         
-        try {
-          // Generate questions for this category (using a default subdomain)
-          const generatedQuestions = await generateQuestions(category, category, 10);
+        // If no subDomain specified, check if any questions exist for this category
+        const anyCategoryQuestions = await TriviaCategory.findOne({ category });
+        if (!anyCategoryQuestions || anyCategoryQuestions.questions.length === 0) {
+          console.log(`No questions found for ${category}, generating automatically...`);
           
-          // Create new trivia category with generated questions
-          triviaCategory = new TriviaCategory({ 
-            category, 
-            domain: category, 
-            questions: generatedQuestions.map(q => ({
-              question: q.question.trim(),
-              options: q.options.map(opt => opt.trim()).filter(opt => opt.length > 0),
-              correct_answer: (q.correct_answer || q.correctAnswer || '').trim(),
-              // Backward compatibility: support both field names
-              correctAnswer: (q.correct_answer || q.correctAnswer || '').trim(),
-              subDomain: category,
-              category: category,
-              // New optional fields with defaults
-              aiGenerated: true,
-              createdAt: new Date(),
-              difficulty: q.difficulty || 'medium',
-              validated: true
-            })).filter(q => q.options.length >= 2 && q.question.length > 10)
-          });
-          
-          await triviaCategory.save();
-          console.log(`Generated and saved ${triviaCategory.questions.length} questions for ${category}`);
-        } catch (genError) {
-          console.error(`Failed to generate questions for ${category}:`, genError);
-          continue; // Skip this category if generation fails
+          try {
+            // Generate questions for this category (using category as default subdomain)
+            const generatedQuestions = await generateQuestions(category, category, 10);
+            
+            // Create new trivia category with generated questions
+            triviaCategory = new TriviaCategory({ 
+              category, 
+              domain: category, 
+              questions: generatedQuestions.map(q => ({
+                question: q.question.trim(),
+                options: q.options.map(opt => opt.trim()).filter(opt => opt.length > 0),
+                correct_answer: (q.correct_answer || q.correctAnswer || '').trim(),
+                // Backward compatibility: support both field names
+                correctAnswer: (q.correct_answer || q.correctAnswer || '').trim(),
+                subDomain: category,
+                category: category,
+                // New optional fields with defaults
+                aiGenerated: true,
+                createdAt: new Date(),
+                difficulty: q.difficulty || 'medium',
+                validated: true
+              })).filter(q => q.options.length >= 2 && q.question.length > 10)
+            });
+            
+            await triviaCategory.save();
+            console.log(`Generated and saved ${triviaCategory.questions.length} questions for ${category}`);
+          } catch (genError) {
+            console.error(`Failed to generate questions for ${category}:`, genError);
+            // If it's an API key error, log it but don't fail the entire request
+            // The frontend can handle generation separately via /api/generate-questions
+            if (genError.message?.includes('API key')) {
+              console.warn(`OpenAI API key issue for ${category} - skipping auto-generation`);
+            }
+            continue; // Skip this category if generation fails
+          }
+        } else {
+          // Questions exist for this category but different subDomain
+          // Use the existing questions (mixing subDomains when no specific subDomain requested)
+          triviaCategory = anyCategoryQuestions;
         }
       }
       
       // Add questions from this category to our collection
       if (triviaCategory && triviaCategory.questions.length > 0) {
-        allQuestions.push(...triviaCategory.questions);
+        // If subDomain was specified, only add questions matching that subDomain
+        // Questions can have subDomain field or inherit from parent domain
+        if (subDomain) {
+          const filteredQuestions = triviaCategory.questions.filter(q => {
+            // Check if question's subDomain matches, or if parent domain matches
+            const questionSubDomain = q.subDomain || triviaCategory.domain;
+            return questionSubDomain === subDomain || triviaCategory.domain === subDomain;
+          });
+          allQuestions.push(...filteredQuestions);
+        } else {
+          // No subDomain specified, add all questions from this category
+          allQuestions.push(...triviaCategory.questions);
+        }
       }
     }
     
@@ -446,7 +474,9 @@ app.get('/api/random-questions', async (req, res) => {
         questions: [],
         totalAvailable: 0,
         generated: 0,
-        message: 'No questions available for the selected categories. Please try different categories.'
+        message: subDomain 
+          ? `No questions available for ${categoryList.join(', ')} / ${subDomain}. Questions can be generated via the generate endpoint.`
+          : 'No questions available for the selected categories. Please try different categories or generate questions.'
       });
     }
     
@@ -517,23 +547,105 @@ app.post("/api/generate-questions", authMiddleware, async (req, res, next) => {
     });
   } catch (error) {
     console.error('Error generating questions:', error);
-    res.status(500).json({ status: "error", message: "Failed to generate questions" });
+    console.error('Error stack:', error.stack);
+    console.error('Request body:', req.body);
+    console.error('Request user:', req.user?._id);
+    
+    const errorMessage = error.message || 'Unknown error occurred';
+    const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV !== 'production';
+    
+    res.status(500).json({ 
+      status: "error", 
+      message: errorMessage,
+      error: isDevelopment ? {
+        message: errorMessage,
+        stack: error.stack,
+        type: error.constructor?.name
+      } : undefined
+    });
   }
 });
 
 // New endpoint for AI-generated explanations
 app.post("/api/generate-explanation", authMiddleware, async (req, res, next) => {
   try {
-    const { question, userAnswer, correctAnswer } = req.body;
+    const { question, userAnswer, correctAnswer, questionId, category, subDomain } = req.body;
     if (!question || !userAnswer || !correctAnswer) {
       return res.status(400).json({ status: "error", message: "Question, user answer, and correct answer are required" });
     }
     
-    const explanation = await generateExplanation(question, userAnswer, correctAnswer);
-    res.json({ status: "success", explanation: explanation });
+    console.log('Explanation request:', { questionId, category, subDomain, hasQuestion: !!question });
+    
+    // Try to find cached explanation if questionId, category, and subDomain are provided
+    let explanation = null;
+    if (questionId && category && subDomain) {
+      const triviaCategory = await TriviaCategory.findOne({ category, domain: subDomain });
+      if (triviaCategory) {
+        console.log('Found trivia category, looking for question:', questionId);
+        const questionObj = triviaCategory.questions.id(questionId);
+        if (questionObj && questionObj.explanation) {
+          console.log('Returning cached explanation');
+          // Return cached explanation
+          return res.json({ 
+            status: "success", 
+            explanation: questionObj.explanation,
+            cached: true 
+          });
+        } else if (questionObj) {
+          console.log('Question found but no cached explanation');
+        } else {
+          console.log('Question not found in category');
+        }
+      } else {
+        console.log('Trivia category not found:', { category, subDomain });
+      }
+    }
+    
+    // Generate new explanation
+    console.log('Generating new explanation via OpenAI...');
+    explanation = await generateExplanation(question, userAnswer, correctAnswer);
+    console.log('Explanation generated, length:', explanation?.length);
+    
+    // Save explanation to database if questionId, category, and subDomain are provided
+    if (questionId && category && subDomain && explanation) {
+      console.log('Attempting to save explanation to database...');
+      const triviaCategory = await TriviaCategory.findOne({ category, domain: subDomain });
+      if (triviaCategory) {
+        const questionObj = triviaCategory.questions.id(questionId);
+        if (questionObj) {
+          questionObj.explanation = explanation;
+          questionObj.explanationGeneratedAt = new Date();
+          await triviaCategory.save();
+          console.log('Explanation saved successfully to database');
+        } else {
+          console.log('Could not find question to save explanation:', questionId);
+        }
+      } else {
+        console.log('Could not find trivia category to save explanation:', { category, subDomain });
+      }
+    } else {
+      console.log('Skipping save - missing params:', { questionId: !!questionId, category: !!category, subDomain: !!subDomain, explanation: !!explanation });
+    }
+    
+    res.json({ status: "success", explanation: explanation, cached: false });
   } catch (error) {
     console.error('Error generating explanation:', error);
-    res.status(500).json({ status: "error", message: "Failed to generate explanation" });
+    console.error('Error stack:', error.stack);
+    console.error('Request body:', req.body);
+    console.error('Request user:', req.user?._id);
+    
+    const errorMessage = error.message || 'Unknown error occurred';
+    const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV !== 'production';
+    
+    res.status(500).json({ 
+      status: "error", 
+      message: errorMessage,
+      error: isDevelopment ? {
+        message: errorMessage,
+        stack: error.stack,
+        type: error.constructor?.name
+      } : undefined
+    });
   }
 });
 
