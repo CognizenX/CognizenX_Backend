@@ -28,6 +28,9 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+// Database connection string: use environment variables only (no hardcoded fallback)
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGO_URL;
+
 const authMiddleware = async (req, res, next) => {
   const authorizationHeader = req.header("Authorization");
   console.log("Authorization Header:", authorizationHeader); // Log header
@@ -147,7 +150,7 @@ app.post("/api/add-questions", async (req, res, next) => {
     let triviaCategory = await TriviaCategory.findOne({ category, domain });
 
     if (!triviaCategory) {
-      triviaCategory = new Trivia({
+      triviaCategory = new TriviaCategory({
         category,
         domain,
         questions: [],
@@ -479,13 +482,14 @@ app.get('/api/users/:id', async (req, res) => {
 })
 
 if (process.env.NODE_ENV !== "test") {
-  mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log("MongoDB Connected"))
-  .catch((err) => console.log(err));
+  if (!MONGO_URI) {
+    console.error("MongoDB connection string missing: set MONGO_URI (or MONGO_URL)");
+  } else {
+    mongoose
+      .connect(MONGO_URI)
+      .then(() => console.log("MongoDB Connected"))
+      .catch((err) => console.log(err));
+  }
 }
 
 
