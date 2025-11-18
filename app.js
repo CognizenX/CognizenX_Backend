@@ -45,12 +45,12 @@ app.use(cors());
 app.use(bodyParser.json({ limit: '10mb' }));
 
 // Rate limiting for auth endpoints
-// More lenient in development, stricter in production
+// More lenient in development, reasonable in production
 const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV !== 'production';
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isDevelopment ? 50 : 5, // More lenient in development (50 vs 5)
+  max: isDevelopment ? 50 : 15, // More lenient: 50 in dev, 15 in production (was 5)
   message: {
     message: 'Too many authentication attempts from this IP, please try again after 15 minutes.'
   },
