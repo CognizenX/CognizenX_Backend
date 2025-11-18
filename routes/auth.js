@@ -9,7 +9,7 @@ const UserActivity = require('../models/UserActivity');
 const signupSchema = Joi.object({
   name: Joi.string().min(2).max(50).pattern(/^[a-zA-Z\s]+$/).required(),
   email: Joi.string().email().max(100).required(),
-  password: Joi.string().min(8).max(128).pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).required()
+  password: Joi.string().min(6).max(128).required() // Simple password - just min 6 chars, no complexity required
 });
 
 const loginSchema = Joi.object({
@@ -20,42 +20,8 @@ const loginSchema = Joi.object({
 
 const router = express.Router();
 
-// Middleware to verify session tokens
-const authMiddleware = async (req, res, next) => {
-  const authorizationHeader = req.header("Authorization");
-  console.log("Authorization Header:", authorizationHeader); // Log the raw header
-
-  if (!authorizationHeader) {
-    return res.status(401).json({ message: "Unauthorized: Missing Authorization header" });
-  }
-
-  const sessionToken = authorizationHeader.replace("Bearer ", "").trim();
-  console.log("Session Token Received:", sessionToken); // Log the token received from the client
-
-  if (!sessionToken) {
-    return res.status(401).json({ message: "Unauthorized: Missing session token" });
-  }
-
-  try {
-    const user = await User.findOne({
-      sessionToken,
-      $or: [
-        { tokenExpiresAt: null }, // No expiration set (legacy tokens)
-        { tokenExpiresAt: { $gt: new Date() } } // Token not expired
-      ]
-    });
-
-    if (!user) {
-      return res.status(401).json({ message: "Unauthorized: Invalid or expired session token" });
-    }
-
-    req.user = user; // Attach user to request
-    next();
-  } catch (err) {
-    console.error("Error in authMiddleware:", err);
-    throw err; // Let centralized error handler deal with it
-  }
-};
+// Use unified authentication middleware
+const authMiddleware = require("../middleware/auth");
 
 // Endpoint to fetch user ID
 router.get("/get-user-id", authMiddleware, async (req, res) => {
@@ -105,7 +71,49 @@ router.post("/signup", async (req, res) => {
       tokenExpiresAt: expiresAt
     });
 
-    await newUser.save();
+    // Save the user to database
+    try {
+      await newUser.save();
+      console.log("User saved with sessionToken:", email);
+    } catch (saveError) {
+      console.error("Error saving new user:", saveError);
+      throw saveError;
+    }
+
+    // Verify the token was actually saved to the database
+    // This is critical for serverless functions where writes might not be immediately available
+    let verificationAttempts = 0;
+    const maxVerificationAttempts = 5;
+    let tokenVerified = false;
+
+    while (verificationAttempts < maxVerificationAttempts && !tokenVerified) {
+      verificationAttempts++;
+      
+      // Small delay to allow database write to propagate
+      if (verificationAttempts > 1) {
+        await new Promise(resolve => setTimeout(resolve, 100 * verificationAttempts));
+      }
+
+      const verifiedUser = await User.findOne({
+        _id: newUser._id,
+        sessionToken: sessionToken
+      });
+
+      if (verifiedUser && verifiedUser.sessionToken === sessionToken) {
+        tokenVerified = true;
+        console.log(`Token verified in database on attempt ${verificationAttempts} for new user:`, email);
+      } else {
+        console.log(`Token verification attempt ${verificationAttempts} failed for new user:`, email);
+      }
+    }
+
+    if (!tokenVerified) {
+      console.error("CRITICAL: Token was not found in database after save for new user:", email);
+      return res.status(500).json({
+        message: "Failed to create account. Please try again."
+      });
+    }
+
     console.log("User created successfully:", email);
 
     res.status(201).json({
@@ -158,7 +166,49 @@ router.post("/login", async (req, res) => {
 
     user.sessionToken = sessionToken;
     user.tokenExpiresAt = expiresAt;
-    await user.save();
+    
+    // Save the token to database
+    try {
+      await user.save();
+      console.log("User saved with sessionToken:", email);
+    } catch (saveError) {
+      console.error("Error saving user sessionToken:", saveError);
+      throw saveError;
+    }
+
+    // Verify the token was actually saved to the database
+    // This is critical for serverless functions where writes might not be immediately available
+    let verificationAttempts = 0;
+    const maxVerificationAttempts = 5;
+    let tokenVerified = false;
+
+    while (verificationAttempts < maxVerificationAttempts && !tokenVerified) {
+      verificationAttempts++;
+      
+      // Small delay to allow database write to propagate
+      if (verificationAttempts > 1) {
+        await new Promise(resolve => setTimeout(resolve, 100 * verificationAttempts));
+      }
+
+      const verifiedUser = await User.findOne({
+        _id: user._id,
+        sessionToken: sessionToken
+      });
+
+      if (verifiedUser && verifiedUser.sessionToken === sessionToken) {
+        tokenVerified = true;
+        console.log(`Token verified in database on attempt ${verificationAttempts} for user:`, email);
+      } else {
+        console.log(`Token verification attempt ${verificationAttempts} failed for user:`, email);
+      }
+    }
+
+    if (!tokenVerified) {
+      console.error("CRITICAL: Token was not found in database after save for user:", email);
+      return res.status(500).json({
+        message: "Failed to create session. Please try again."
+      });
+    }
 
     console.log("User logged in successfully:", email);
 
