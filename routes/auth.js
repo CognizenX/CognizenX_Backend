@@ -3,6 +3,7 @@ const crypto = require("crypto"); // Import the crypto module
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const UserActivity = require('../models/UserActivity');
+const mailer = require('../services/mailer');
 
 
 const router = express.Router();
@@ -98,7 +99,6 @@ router.post("/login", async (req, res) => {
 
     if (!user) return res.status(400).json({ message: "User not found" });
 
-    console.log("Plain Password Input:", password);
     console.log("Hashed Password in DB:", user.password);
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -115,6 +115,95 @@ router.post("/login", async (req, res) => {
   } catch (err) {
     console.error("Login Error:", err);
     res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+// Request Password Reset: POST /api/auth/request-password-reset
+router.post("/request-password-reset", async (req, res) => {
+  try {
+    const { email } = req.body || {};
+    console.log('[request-password-reset] incoming email:', email);
+    if (!email) return res.status(400).json({ message: "Email is required" });
+
+    const user = await User.findOne({ email: String(email).toLowerCase() });
+    // Always respond with success to avoid user enumeration
+    const genericResponse = { message: "If that email exists, a reset link has been sent." };
+
+    if (!user) {
+      console.log('[request-password-reset] no user found for email');
+      return res.json(genericResponse);
+    }
+
+    // Generate token and save hashed version
+    const rawToken = user.generatePasswordReset();
+    await user.save();
+
+    // Build reset link using RESET_URL as the full destination (with or without a path)
+    // Examples:
+    //  - RESET_URL=https://reset-password-sigma.vercel.app            => https://.../?token=...&email=...
+    //  - RESET_URL=https://reset-password-sigma.vercel.app/reset-password => https://.../reset-password?token=...&email=...
+    const resetBase = process.env.RESET_URL || `${req.protocol}://${req.get('host')}/reset-password`;
+    let resetUrl;
+    try {
+      resetUrl = new URL(resetBase);
+    } catch (e) {
+      // Fallback if provided RESET_URL is missing protocol; assume https
+      resetUrl = new URL(`https://${resetBase}`);
+    }
+    resetUrl.searchParams.set('token', rawToken);
+    resetUrl.searchParams.set('email', user.email);
+    const resetLink = resetUrl.toString();
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[request-password-reset] dev reset link:', resetLink);
+    }
+
+    try {
+      await mailer.sendPasswordReset(user.email, resetLink);
+      console.log('[request-password-reset] email send attempted via SendGrid');
+    } catch (mailErr) {
+      console.error('Failed to send reset email:', mailErr);
+      // Still return generic success to the client
+    }
+
+    return res.json(genericResponse);
+  } catch (err) {
+    console.error('request-password-reset error:', err);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+// Reset Password: POST /api/auth/reset-password
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, password } = req.body || {};
+    if (!token || !password) {
+      return res.status(400).json({ message: 'Token and password are required' });
+    }
+
+    const hashed = crypto.createHash('sha256').update(String(token)).digest('hex');
+    const user = await User.findOne({
+      resetPasswordToken: hashed,
+      resetPasswordExpires: { $gt: new Date() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired token' });
+    }
+
+    // Hash new password and clear reset fields
+    const saltRounds = 10;
+    const newHashed = await bcrypt.hash(password, saltRounds);
+    user.password = newHashed;
+    user.clearPasswordReset();
+    // Invalidate existing session token (force re-login)
+    user.sessionToken = undefined;
+    await user.save();
+
+    return res.json({ message: 'Password has been reset successfully. Please log in.' });
+  } catch (err) {
+    console.error('reset-password error:', err);
+    res.status(500).json({ message: 'Internal Server Error' });
   }
 });
 
