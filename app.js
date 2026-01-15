@@ -374,20 +374,25 @@ app.get("/api/questions", async (req, res, next) => {
 const { generateQuestions, generateExplanation } = require('./services/openaiService');
 
 app.get('/api/random-questions', async (req, res) => {
-  const { categories, subDomain } = req.query; // Comma-separated list of categories, optional subDomain
+  const { categories, subDomain, useSaved = 'false' } = req.query; // Comma-separated list of categories, optional subDomain, optional useSaved flag
 
   if (!categories) {
     return res.status(400).json({ message: 'Categories are required.' });
   }
 
   const categoryList = categories.split(',');
+  const shouldUseSaved = useSaved === 'true' || useSaved === true;
 
   try {
-    let allQuestions = [];
+    let newQuestions = [];
+    let savedQuestions = [];
     
-    // For each category, get questions (filtered by subDomain if provided)
+    // For each category, generate new questions and get saved ones
     for (const category of categoryList) {
-      // Build query - if subDomain provided, filter by both category and domain
+      // Determine the domain/subDomain to use
+      const domainToUse = subDomain || category;
+      
+      // First, try to get saved questions from the bank
       const query = subDomain 
         ? { category, domain: subDomain }
         : { category };
@@ -395,100 +400,128 @@ app.get('/api/random-questions', async (req, res) => {
       let triviaCategory = await TriviaCategory.findOne(query);
       
       // If no questions exist for this category/subDomain, try to find any questions for the category
-      // (to avoid auto-generating if questions exist for other subDomains)
       if (!triviaCategory || triviaCategory.questions.length === 0) {
-        // If subDomain was specified but no questions found, don't auto-generate
-        // Let the user generate questions explicitly via /api/generate-questions
-        if (subDomain) {
-          console.log(`No questions found for ${category}/${subDomain}, skipping...`);
-          continue;
-        }
-        
-        // If no subDomain specified, check if any questions exist for this category
         const anyCategoryQuestions = await TriviaCategory.findOne({ category });
-        if (!anyCategoryQuestions || anyCategoryQuestions.questions.length === 0) {
-          console.log(`No questions found for ${category}, generating automatically...`);
-          
-          try {
-            // Generate questions for this category (using category as default subdomain)
-            const generatedQuestions = await generateQuestions(category, category, 10);
-            
-            // Create new trivia category with generated questions
-            triviaCategory = new TriviaCategory({ 
-              category, 
-              domain: category, 
-              questions: generatedQuestions.map(q => ({
-                question: q.question.trim(),
-                options: q.options.map(opt => opt.trim()).filter(opt => opt.length > 0),
-                correct_answer: (q.correct_answer || q.correctAnswer || '').trim(),
-                // Backward compatibility: support both field names
-                correctAnswer: (q.correct_answer || q.correctAnswer || '').trim(),
-                subDomain: category,
-                category: category,
-                // New optional fields with defaults
-                aiGenerated: true,
-                createdAt: new Date(),
-                difficulty: q.difficulty || 'medium',
-                validated: true
-              })).filter(q => q.options.length >= 2 && q.question.length > 10)
-            });
-            
-            await triviaCategory.save();
-            console.log(`Generated and saved ${triviaCategory.questions.length} questions for ${category}`);
-          } catch (genError) {
-            console.error(`Failed to generate questions for ${category}:`, genError);
-            // If it's an API key error, log it but don't fail the entire request
-            // The frontend can handle generation separately via /api/generate-questions
-            if (genError.message?.includes('API key')) {
-              console.warn(`OpenAI API key issue for ${category} - skipping auto-generation`);
-            }
-            continue; // Skip this category if generation fails
-          }
-        } else {
-          // Questions exist for this category but different subDomain
-          // Use the existing questions (mixing subDomains when no specific subDomain requested)
+        if (anyCategoryQuestions && anyCategoryQuestions.questions.length > 0) {
           triviaCategory = anyCategoryQuestions;
         }
       }
       
-      // Add questions from this category to our collection
+      // Collect saved questions
       if (triviaCategory && triviaCategory.questions.length > 0) {
-        // If subDomain was specified, only add questions matching that subDomain
-        // Questions can have subDomain field or inherit from parent domain
+        let categorySavedQuestions = [];
         if (subDomain) {
-          const filteredQuestions = triviaCategory.questions.filter(q => {
-            // Check if question's subDomain matches, or if parent domain matches
+          categorySavedQuestions = triviaCategory.questions.filter(q => {
             const questionSubDomain = q.subDomain || triviaCategory.domain;
             return questionSubDomain === subDomain || triviaCategory.domain === subDomain;
           });
-          allQuestions.push(...filteredQuestions);
         } else {
-          // No subDomain specified, add all questions from this category
-          allQuestions.push(...triviaCategory.questions);
+          categorySavedQuestions = triviaCategory.questions;
+        }
+        savedQuestions.push(...categorySavedQuestions);
+      }
+      
+      // Try to generate NEW questions for this quiz session (7 new questions needed)
+      if (!shouldUseSaved) {
+        console.log(`Generating new questions for ${category}/${domainToUse}...`);
+        
+        try {
+          // Generate 7 new questions for this category/subDomain
+          const generatedQuestions = await generateQuestions(category, domainToUse, 7);
+          
+          // Format the generated questions
+          const formattedQuestions = generatedQuestions.map(q => ({
+            question: q.question.trim(),
+            options: q.options.map(opt => opt.trim()).filter(opt => opt.length > 0),
+            correct_answer: (q.correct_answer || q.correctAnswer || '').trim(),
+            // Backward compatibility: support both field names
+            correctAnswer: (q.correct_answer || q.correctAnswer || '').trim(),
+            subDomain: domainToUse,
+            category: category,
+            // New optional fields with defaults
+            aiGenerated: true,
+            createdAt: new Date(),
+            difficulty: q.difficulty || 'medium',
+            validated: true
+          })).filter(q => q.options.length >= 2 && q.question.length > 10);
+          
+          // Add generated questions to the response
+          newQuestions.push(...formattedQuestions);
+          
+          // Save generated questions to database for future reference
+          let triviaCategoryForSave = await TriviaCategory.findOne({ category, domain: domainToUse });
+          if (!triviaCategoryForSave) {
+            triviaCategoryForSave = new TriviaCategory({ 
+              category, 
+              domain: domainToUse, 
+              questions: [] 
+            });
+          }
+          
+          // Add new questions to the database (avoid duplicates by checking question text)
+          formattedQuestions.forEach(newQ => {
+            const isDuplicate = triviaCategoryForSave.questions.some(
+              existingQ => existingQ.question.trim().toLowerCase() === newQ.question.trim().toLowerCase()
+            );
+            if (!isDuplicate) {
+              triviaCategoryForSave.questions.push(newQ);
+            }
+          });
+          
+          await triviaCategoryForSave.save();
+          console.log(`Generated and saved ${formattedQuestions.length} new questions for ${category}/${domainToUse}`);
+        } catch (genError) {
+          console.error(`Failed to generate questions for ${category}/${domainToUse}:`, genError);
+          // If generation fails, we'll use saved questions as fallback
+          if (genError.message?.includes('API key')) {
+            console.warn(`OpenAI API key issue for ${category} - will use saved questions only`);
+          }
         }
       }
     }
     
-    if (allQuestions.length === 0) {
+    // Combine questions: 7 new + 3 from bank, or all from bank if can't generate
+    let finalQuestions = [];
+    
+    if (newQuestions.length >= 7 && savedQuestions.length >= 3) {
+      // We have enough new and saved questions - mix them
+      // Shuffle and take 7 new questions
+      const shuffledNew = newQuestions.sort(() => Math.random() - 0.5).slice(0, 7);
+      // Shuffle and take 3 saved questions
+      const shuffledSaved = savedQuestions.sort(() => Math.random() - 0.5).slice(0, 3);
+      finalQuestions = [...shuffledNew, ...shuffledSaved];
+    } else if (newQuestions.length > 0) {
+      // We have some new questions but not enough saved - use what we have
+      const neededFromSaved = 10 - newQuestions.length;
+      const shuffledNew = newQuestions.sort(() => Math.random() - 0.5);
+      const shuffledSaved = savedQuestions.sort(() => Math.random() - 0.5).slice(0, neededFromSaved);
+      finalQuestions = [...shuffledNew, ...shuffledSaved];
+    } else if (savedQuestions.length > 0) {
+      // Can't generate new questions - use all 10 from bank
+      console.log(`Using all ${Math.min(savedQuestions.length, 10)} questions from bank (generation failed)`);
+      finalQuestions = savedQuestions.sort(() => Math.random() - 0.5).slice(0, 10);
+    }
+    
+    if (finalQuestions.length === 0) {
       return res.status(200).json({
         questions: [],
         totalAvailable: 0,
         generated: 0,
         message: subDomain 
-          ? `No questions available for ${categoryList.join(', ')} / ${subDomain}. Questions can be generated via the generate endpoint.`
-          : 'No questions available for the selected categories. Please try different categories or generate questions.'
+          ? `No questions available for ${categoryList.join(', ')} / ${subDomain}. Please check OpenAI API configuration.`
+          : 'No questions available for the selected categories. Please check OpenAI API configuration.'
       });
     }
     
-    // Shuffle all questions and select 10 random ones
-    const shuffledQuestions = allQuestions.sort(() => Math.random() - 0.5);
-    const selectedQuestions = shuffledQuestions.slice(0, 10);
+    // Shuffle the final mix of questions
+    const shuffledFinal = finalQuestions.sort(() => Math.random() - 0.5);
+    const selectedQuestions = shuffledFinal.slice(0, 10);
     
     // Ensure backward compatibility for existing questions
     const compatibleQuestions = selectedQuestions.map(q => ({
-      ...q.toObject(),
+      ...q.toObject ? q.toObject() : q,
       // Provide defaults for new fields if they don't exist
-      aiGenerated: q.aiGenerated || false,
+      aiGenerated: q.aiGenerated !== undefined ? q.aiGenerated : false,
       difficulty: q.difficulty || 'medium',
       validated: q.validated !== undefined ? q.validated : true,
       // Ensure both field names exist for compatibility
@@ -498,7 +531,7 @@ app.get('/api/random-questions', async (req, res) => {
     
     res.json({ 
       questions: compatibleQuestions,
-      totalAvailable: allQuestions.length,
+      totalAvailable: finalQuestions.length,
       generated: compatibleQuestions.filter(q => q.aiGenerated).length
     });
   } catch (error) {
