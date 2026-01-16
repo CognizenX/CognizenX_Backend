@@ -1,6 +1,6 @@
 /**
  * Manual Test Script for /api/random-questions endpoint
- * Tests the new 7 new + 3 saved questions functionality
+ * Tests the new 10 new AI-generated questions functionality
  * 
  * Run with: node test-endpoints.js
  */
@@ -77,8 +77,8 @@ async function testRandomQuestions() {
     log(`✅ Questions returned: ${response3.data.questions?.length || 0}`, 'green');
     log(`✅ Generated (AI): ${response3.data.generated || 0}`, 'green');
     
-    // Test 4: Check for 7 new + 3 saved mix
-    log('\nTest 4: Verifying question mix (7 new + 3 saved)', 'blue');
+    // Test 4: Check for 10 new AI-generated questions
+    log('\nTest 4: Verifying question mix (10 new AI-generated)', 'blue');
     if (response2.data.questions && response2.data.questions.length === 10) {
       const aiGenerated = response2.data.questions.filter(q => q.aiGenerated === true).length;
       const fromBank = response2.data.questions.filter(q => q.aiGenerated === false).length;
@@ -87,12 +87,12 @@ async function testRandomQuestions() {
       log(`✅ AI Generated (new): ${aiGenerated}`, 'green');
       log(`✅ From Bank (saved): ${fromBank}`, 'green');
       
-      if (aiGenerated >= 7 && fromBank >= 3) {
-        log(`✅ Perfect mix: 7 new + 3 saved!`, 'green');
+      if (aiGenerated === 10) {
+        log(`✅ Perfect: All 10 questions are new AI-generated!`, 'green');
       } else if (aiGenerated === 0 && fromBank === 10) {
         log(`⚠️  All from bank (generation may have failed - this is expected fallback)`, 'yellow');
       } else {
-        log(`⚠️  Mixed: ${aiGenerated} new + ${fromBank} saved (may vary based on availability)`, 'yellow');
+        log(`⚠️  Mixed: ${aiGenerated} new + ${fromBank} saved (generation may have been partial)`, 'yellow');
       }
     }
     

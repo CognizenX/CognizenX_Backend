@@ -421,13 +421,13 @@ app.get('/api/random-questions', async (req, res) => {
         savedQuestions.push(...categorySavedQuestions);
       }
       
-      // Try to generate NEW questions for this quiz session (7 new questions needed)
+      // Try to generate NEW questions for this quiz session (10 new questions needed)
       if (!shouldUseSaved) {
         console.log(`Generating new questions for ${category}/${domainToUse}...`);
         
         try {
-          // Generate 7 new questions for this category/subDomain
-          const generatedQuestions = await generateQuestions(category, domainToUse, 7);
+          // Generate 10 new questions for this category/subDomain
+          const generatedQuestions = await generateQuestions(category, domainToUse, 10);
           
           // Format the generated questions
           const formattedQuestions = generatedQuestions.map(q => ({
@@ -480,24 +480,24 @@ app.get('/api/random-questions', async (req, res) => {
       }
     }
     
-    // Combine questions: 7 new + 3 from bank, or all from bank if can't generate
+    // Use 10 new AI-generated questions, or fallback to saved questions if generation fails
     let finalQuestions = [];
     
-    if (newQuestions.length >= 7 && savedQuestions.length >= 3) {
-      // We have enough new and saved questions - mix them
-      // Shuffle and take 7 new questions
-      const shuffledNew = newQuestions.sort(() => Math.random() - 0.5).slice(0, 7);
-      // Shuffle and take 3 saved questions
-      const shuffledSaved = savedQuestions.sort(() => Math.random() - 0.5).slice(0, 3);
-      finalQuestions = [...shuffledNew, ...shuffledSaved];
+    if (newQuestions.length >= 10) {
+      // We have enough new questions - use all 10
+      finalQuestions = newQuestions.sort(() => Math.random() - 0.5).slice(0, 10);
     } else if (newQuestions.length > 0) {
-      // We have some new questions but not enough saved - use what we have
-      const neededFromSaved = 10 - newQuestions.length;
-      const shuffledNew = newQuestions.sort(() => Math.random() - 0.5);
-      const shuffledSaved = savedQuestions.sort(() => Math.random() - 0.5).slice(0, neededFromSaved);
-      finalQuestions = [...shuffledNew, ...shuffledSaved];
+      // We have some new questions but not enough - use what we have (shouldn't happen normally)
+      console.log(`Warning: Only generated ${newQuestions.length} questions, expected 10`);
+      finalQuestions = newQuestions.sort(() => Math.random() - 0.5);
+      // Try to fill remaining slots from saved questions if available
+      if (savedQuestions.length > 0 && finalQuestions.length < 10) {
+        const neededFromSaved = 10 - finalQuestions.length;
+        const shuffledSaved = savedQuestions.sort(() => Math.random() - 0.5).slice(0, neededFromSaved);
+        finalQuestions = [...finalQuestions, ...shuffledSaved];
+      }
     } else if (savedQuestions.length > 0) {
-      // Can't generate new questions - use all 10 from bank
+      // Can't generate new questions - use all 10 from bank as fallback
       console.log(`Using all ${Math.min(savedQuestions.length, 10)} questions from bank (generation failed)`);
       finalQuestions = savedQuestions.sort(() => Math.random() - 0.5).slice(0, 10);
     }
@@ -513,12 +513,11 @@ app.get('/api/random-questions', async (req, res) => {
       });
     }
     
-    // Shuffle the final mix of questions
+    // Final shuffle for randomness (finalQuestions is already limited to 10)
     const shuffledFinal = finalQuestions.sort(() => Math.random() - 0.5);
-    const selectedQuestions = shuffledFinal.slice(0, 10);
     
     // Ensure backward compatibility for existing questions
-    const compatibleQuestions = selectedQuestions.map(q => ({
+    const compatibleQuestions = shuffledFinal.map(q => ({
       ...q.toObject ? q.toObject() : q,
       // Provide defaults for new fields if they don't exist
       aiGenerated: q.aiGenerated !== undefined ? q.aiGenerated : false,

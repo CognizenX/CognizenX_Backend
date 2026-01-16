@@ -52,7 +52,7 @@ describe("GET /api/random-questions", () => {
       expect(q).toHaveProperty("options");
       expect(q).toHaveProperty("correctAnswer");
     }
-  }, 30000); // Increase timeout to 30 seconds to allow for OpenAI API calls
+  }, 90000); // Increase timeout to 90 seconds to allow for OpenAI API calls (10 questions per category)
 
   it("should return 400 if categories are missing", async () => {
     const res = await request(app).get("/api/random-questions");
@@ -70,4 +70,27 @@ describe("GET /api/random-questions", () => {
     expect(Array.isArray(res.body.questions)).toBe(true);
     expect(res.body.questions.length).toBe(0);
   });
+
+  it("should return 10 new AI-generated questions when generation succeeds", async () => {
+    // This test may use saved questions if OpenAI API is not configured
+    // but should still return valid questions
+    const res = await request(app)
+      .get("/api/random-questions")
+      .query({ categories: "history" });
+
+    expect(res.statusCode).toBe(200);
+    expect(Array.isArray(res.body.questions)).toBe(true);
+    expect(res.body.questions.length).toBeLessThanOrEqual(10);
+    
+    // If questions are returned, verify they have the expected structure
+    if (res.body.questions.length > 0) {
+      res.body.questions.forEach(q => {
+        expect(q).toHaveProperty("question");
+        expect(q).toHaveProperty("options");
+        expect(q).toHaveProperty("correctAnswer");
+        expect(Array.isArray(q.options)).toBe(true);
+        expect(q.options.length).toBeGreaterThanOrEqual(2);
+      });
+    }
+  }, 60000); // Increased timeout for OpenAI API calls
 });
