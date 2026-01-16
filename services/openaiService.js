@@ -23,23 +23,25 @@ const generateQuestions = async (category, subDomain, count = 10) => {
     const exampleQuestions = getExampleQuestions(normalizedCategory, normalizedSubDomain);
     
     // Enhanced prompt for more relevant and meaningful questions
+    // IMPORTANT: This application is focused on Indian content. All questions should be about India unless explicitly stated otherwise.
     const prompt = `Generate ${count} high-quality, relevant trivia questions about ${subDomain || category}.
     
     CRITICAL REQUIREMENTS:
-    1. Questions MUST be specifically about ${subDomain || category} - not generic knowledge
-    2. All questions should be factually accurate and educational
-    3. Questions should vary in difficulty (easy, medium, hard)
-    4. Options should be plausible and related to the topic
-    5. Avoid overly obscure or trivial facts
-    6. Focus on interesting, memorable information
+    1. ALL QUESTIONS MUST BE ABOUT INDIA - This is an Indian trivia application. Do NOT generate questions about US, UK, or any other country unless explicitly specified.
+    2. Questions MUST be specifically about ${subDomain || category} in the context of India - not generic knowledge
+    3. All questions should be factually accurate and educational
+    4. Questions should vary in difficulty (easy, medium, hard)
+    5. Options should be plausible and related to the topic
+    6. Avoid overly obscure or trivial facts
+    7. Focus on interesting, memorable information about India
     
     ${relevantTopics.length > 0 ? `SPECIFIC TOPICS TO COVER: ${relevantTopics.join(', ')}` : ''}
     
     ${exampleQuestions.length > 0 ? `EXAMPLE QUESTIONS FOR REFERENCE: ${exampleQuestions.join(' | ')}` : ''}
     
     CONTEXT-SPECIFIC EXAMPLES:
-    - If category is "politics" and subDomain is "National": Focus on Indian national politics, government, constitution
-    - If category is "geography" and subDomain is "North Indian": Focus on North Indian states, cities, geography
+    - If category is "politics" and subDomain is "national" or "National": Focus EXCLUSIVELY on Indian national politics, Indian government, Indian constitution, Indian Parliament, Indian Prime Ministers, Indian political parties. DO NOT include US politics, US government, or any non-Indian content.
+    - If category is "geography" and subDomain is "North Indian": Focus on North Indian states, cities, geography within India
     - If category is "entertainment" and subDomain is "Bollywood": Focus on Indian cinema, actors, movies, music
     
     QUESTION QUALITY GUIDELINES:
@@ -68,7 +70,7 @@ const generateQuestions = async (category, subDomain, count = 10) => {
       messages: [
         { 
           role: 'system', 
-          content: 'You are an expert trivia question generator specializing in creating relevant, accurate, and engaging questions for cognitive health applications. Focus on meaningful content that helps with memory and learning.' 
+          content: 'You are an expert trivia question generator specializing in creating relevant, accurate, and engaging questions for cognitive health applications. This application is specifically focused on Indian trivia content. ALL questions must be about India - Indian history, Indian politics, Indian geography, Indian culture, Indian entertainment, etc. Do NOT generate questions about US, UK, or any other country unless explicitly requested. Focus on meaningful content that helps with memory and learning.' 
         },
         { 
           role: 'user', 
