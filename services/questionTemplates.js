@@ -57,6 +57,32 @@ const questionTemplates = {
         "Bollywood Directors and Producers",
         "Bollywood Awards and Recognition"
       ]
+    },
+    cricket: {
+      topics: [
+        "International Cricket Players (all countries)",
+        "ICC World Cup tournaments",
+        "Ashes Series (England vs Australia)",
+        "T20 World Cup",
+        "IPL and other T20 leagues",
+        "Test cricket records and achievements",
+        "ODI cricket history",
+        "Cricket records from all nations"
+      ],
+      examples: [
+        "Who holds the record for highest individual score in Test cricket?",
+        "Which country has won the most ICC World Cups?",
+        "Who is known as the 'Don' in cricket history?",
+        "Which bowler has taken the most wickets in Test cricket?"
+      ]
+    },
+    sports: {
+      topics: [
+        "International Sports Events",
+        "Olympic Games",
+        "World Championships",
+        "International Sports Records"
+      ]
     }
   },
   

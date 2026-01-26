@@ -24,25 +24,62 @@ const generateQuestions = async (category, subDomain, count = 10) => {
     
     // Enhanced prompt for more relevant and meaningful questions
     // IMPORTANT: This application is focused on Indian content. All questions should be about India unless explicitly stated otherwise.
+    // EXCEPTION: Cricket and sports categories should be universal/international, not limited to India only.
+    
+    // Check if this is a sports/cricket category that should be universal
+    // Cricket can be under entertainment.sports.cricket or just "cricket" or "sports"
+    const isSportsCategory = normalizedCategory === 'sports' || 
+                            normalizedCategory === 'entertainment' && (normalizedSubDomain === 'cricket' || normalizedSubDomain === 'sports' || normalizedSubDomain === 'othersports') ||
+                            normalizedSubDomain === 'cricket' || 
+                            normalizedSubDomain === 'sports' ||
+                            normalizedSubDomain === 'othersports';
+    
+    const isUniversalCategory = isSportsCategory;
+    
+    // Debug logging
+    if (isUniversalCategory) {
+      console.log(`[PROMPT] Universal category detected: category="${category}", subDomain="${subDomain}", normalizedCategory="${normalizedCategory}", normalizedSubDomain="${normalizedSubDomain}"`);
+    }
+    
+    // Add variety instruction to encourage different questions each time
+    const varietyInstruction = `IMPORTANT: Generate DIVERSE and VARIED questions. Avoid repeating common or obvious questions. Think creatively about different aspects, time periods, players, tournaments, and records. Each question should be unique and cover different facets of ${subDomain || category}.`;
+    
     const prompt = `Generate ${count} high-quality, relevant trivia questions about ${subDomain || category}.
     
+    ${varietyInstruction}
+    
     CRITICAL REQUIREMENTS:
-    1. ALL QUESTIONS MUST BE ABOUT INDIA - This is an Indian trivia application. Do NOT generate questions about US, UK, or any other country unless explicitly specified.
-    2. Questions MUST be specifically about ${subDomain || category} in the context of India - not generic knowledge
+    ${isUniversalCategory 
+      ? `1. Questions MUST be about UNIVERSAL/INTERNATIONAL ${subDomain || category} - This is CRITICAL. Include questions about cricket from ALL countries (India, Australia, England, West Indies, Pakistan, South Africa, New Zealand, Sri Lanka, Bangladesh, Afghanistan, etc.), international tournaments (ICC World Cup, Ashes, IPL, T20 World Cup, Champions Trophy, etc.), and global cricket history, records, and players from ALL nations. Do NOT limit to Indian cricket only - this should be truly international cricket trivia.`
+      : `1. ALL QUESTIONS MUST BE ABOUT INDIA - This is an Indian trivia application. Do NOT generate questions about US, UK, or any other country unless explicitly specified.`
+    }
+    ${isUniversalCategory
+      ? `2. Questions MUST be specifically about ${subDomain || category} from a global/international perspective - include players, teams, tournaments, and records from all cricket-playing nations. VARY the countries, players, and tournaments you ask about - don't repeat the same topics.`
+      : `2. Questions MUST be specifically about ${subDomain || category} in the context of India - not generic knowledge. VARY the topics, time periods, and aspects you cover.`
+    }
     3. All questions should be factually accurate and educational
-    4. Questions should vary in difficulty (easy, medium, hard)
+    4. Questions should vary in difficulty (easy, medium, hard) - mix different difficulty levels
     5. Options should be plausible and related to the topic
     6. Avoid overly obscure or trivial facts
-    7. Focus on interesting, memorable information about India
+    7. Focus on interesting, memorable information${isUniversalCategory ? ' about international cricket' : ' about India'}
+    8. DIVERSITY: Cover different aspects, time periods, players, events, and records. Avoid generating similar questions to what might have been asked before.
     
     ${relevantTopics.length > 0 ? `SPECIFIC TOPICS TO COVER: ${relevantTopics.join(', ')}` : ''}
     
     ${exampleQuestions.length > 0 ? `EXAMPLE QUESTIONS FOR REFERENCE: ${exampleQuestions.join(' | ')}` : ''}
     
     CONTEXT-SPECIFIC EXAMPLES:
-    - If category is "politics" and subDomain is "national" or "National": Focus EXCLUSIVELY on Indian national politics, Indian government, Indian constitution, Indian Parliament, Indian Prime Ministers, Indian political parties. DO NOT include US politics, US government, or any non-Indian content.
+    ${isUniversalCategory
+      ? `- If category is "entertainment" or "sports" and subDomain is "cricket": This is UNIVERSAL/INTERNATIONAL cricket trivia. Generate questions about:
+        * Players from ALL countries: Sachin Tendulkar (India), Don Bradman (Australia), Brian Lara (West Indies), Wasim Akram (Pakistan), Jacques Kallis (South Africa), etc.
+        * International tournaments: ICC World Cup, Ashes Series, T20 World Cup, Champions Trophy, IPL, Big Bash League, etc.
+        * Records and achievements from all cricket-playing nations
+        * Historical moments from global cricket history
+        * DO NOT focus only on Indian cricket - this must be truly international cricket trivia covering all major cricket nations and tournaments.`
+      : `- If category is "politics" and subDomain is "national" or "National": Focus EXCLUSIVELY on Indian national politics, Indian government, Indian constitution, Indian Parliament, Indian Prime Ministers, Indian political parties. DO NOT include US politics, US government, or any non-Indian content.
     - If category is "geography" and subDomain is "North Indian": Focus on North Indian states, cities, geography within India
-    - If category is "entertainment" and subDomain is "Bollywood": Focus on Indian cinema, actors, movies, music
+    - If category is "entertainment" and subDomain is "Bollywood": Focus on Indian cinema, actors, movies, music`
+    }
     
     QUESTION QUALITY GUIDELINES:
     - Questions should test understanding, not just memorization
@@ -65,20 +102,27 @@ const generateQuestions = async (category, subDomain, count = 10) => {
     - Ensure all questions are genuinely about ${subDomain || category}
     - Make questions engaging and educational for dementia patients`;
 
+    // Add timestamp-based variation to prompt to encourage different questions each time
+    const timestamp = Date.now();
+    const variationHint = `Generate questions that are different from previous sessions. Consider different time periods, players, tournaments, records, and aspects of ${subDomain || category}.`;
+    
     const completion = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: [
         { 
           role: 'system', 
-          content: 'You are an expert trivia question generator specializing in creating relevant, accurate, and engaging questions for cognitive health applications. This application is specifically focused on Indian trivia content. ALL questions must be about India - Indian history, Indian politics, Indian geography, Indian culture, Indian entertainment, etc. Do NOT generate questions about US, UK, or any other country unless explicitly requested. Focus on meaningful content that helps with memory and learning.' 
+          content: isUniversalCategory
+            ? 'You are an expert trivia question generator specializing in creating relevant, accurate, and engaging questions for cognitive health applications. For cricket and sports categories, you MUST generate UNIVERSAL/INTERNATIONAL questions covering ALL cricket-playing nations (India, Australia, England, West Indies, Pakistan, South Africa, New Zealand, Sri Lanka, Bangladesh, Afghanistan, etc.), international tournaments (ICC World Cup, Ashes, IPL, T20 World Cup, Champions Trophy, etc.), and global cricket history, records, and players from ALL nations. Do NOT limit to Indian cricket only - this must be truly international cricket trivia. IMPORTANT: Generate DIVERSE questions each time - vary countries, players, tournaments, and time periods. For all other categories, focus on Indian content. Focus on meaningful content that helps with memory and learning.'
+            : 'You are an expert trivia question generator specializing in creating relevant, accurate, and engaging questions for cognitive health applications. This application is specifically focused on Indian trivia content. ALL questions must be about India - Indian history, Indian politics, Indian geography, Indian culture, Indian entertainment, etc. Do NOT generate questions about US, UK, or any other country unless explicitly requested. IMPORTANT: Generate DIVERSE questions each time - vary topics, time periods, and aspects. Focus on meaningful content that helps with memory and learning.' 
         },
         { 
           role: 'user', 
-          content: prompt 
+          content: `${prompt}\n\n${variationHint}`
         }
       ],
-      temperature: 0.3, // Lower temperature for more consistent, focused questions
-      max_tokens: 1200, // Reduced to ~120 tokens per question (10 questions) - safer for quota limits
+      temperature: 0.9, // Higher temperature (0.9) for maximum variety and creativity - prevents repetitive questions
+      max_tokens: 2000, // Increased to allow for more diverse and detailed question generation
+      top_p: 0.95, // Nucleus sampling for more diverse outputs
     });
 
     const content = completion.choices[0]?.message?.content?.trim();
