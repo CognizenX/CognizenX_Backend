@@ -233,16 +233,32 @@ app.post("/api/add-questions", async (req, res, next) => {
       });
     }
 
+    let addedCount = 0;
+    let duplicateCount = 0;
+    
     questions.forEach((question) => {
       const newQuestion = {
-        question: question.question,
+        question: question.question.trim(),
         options: question.options,
         correct_answer: question.correct_answer || question.correctAnswer,
         subDomain: question.subDomain,
       };
 
-      triviaCategory.questions.push(newQuestion); // push as object, not string
+      // Check for duplicates before adding
+      const isDuplicate = triviaCategory.questions.some(
+        existingQ => existingQ.question.trim().toLowerCase() === newQuestion.question.trim().toLowerCase()
+      );
+      
+      if (!isDuplicate) {
+        triviaCategory.questions.push(newQuestion);
+        addedCount++;
+      } else {
+        duplicateCount++;
+        console.log(`Duplicate question skipped: "${newQuestion.question.substring(0, 50)}..."`);
+      }
     });
+    
+    console.log(`Added ${addedCount} new questions, skipped ${duplicateCount} duplicates`);
 
     await triviaCategory.save();
 
@@ -423,11 +439,13 @@ app.get('/api/random-questions', async (req, res) => {
       
       // Try to generate NEW questions for this quiz session (10 new questions needed)
       if (!shouldUseSaved) {
-        console.log(`Generating new questions for ${category}/${domainToUse}...`);
+        console.log(`[QUESTION GENERATION] Starting generation for category: "${category}", domain: "${domainToUse}"`);
         
         try {
           // Generate 10 new questions for this category/subDomain
+          console.log(`[QUESTION GENERATION] Calling OpenAI API for ${category}/${domainToUse}...`);
           const generatedQuestions = await generateQuestions(category, domainToUse, 10);
+          console.log(`[QUESTION GENERATION] OpenAI returned ${generatedQuestions.length} questions for ${category}/${domainToUse}`);
           
           // Format the generated questions
           const formattedQuestions = generatedQuestions.map(q => ({
@@ -459,22 +477,38 @@ app.get('/api/random-questions', async (req, res) => {
           }
           
           // Add new questions to the database (avoid duplicates by checking question text)
+          let addedCount = 0;
+          let duplicateCount = 0;
+          
           formattedQuestions.forEach(newQ => {
             const isDuplicate = triviaCategoryForSave.questions.some(
               existingQ => existingQ.question.trim().toLowerCase() === newQ.question.trim().toLowerCase()
             );
             if (!isDuplicate) {
               triviaCategoryForSave.questions.push(newQ);
+              addedCount++;
+            } else {
+              duplicateCount++;
+              console.log(`Duplicate question skipped in /api/random-questions: "${newQ.question.substring(0, 50)}..."`);
             }
           });
           
           await triviaCategoryForSave.save();
-          console.log(`Generated and saved ${formattedQuestions.length} new questions for ${category}/${domainToUse}`);
+          console.log(`Generated and saved ${addedCount} new questions for ${category}/${domainToUse} (${duplicateCount} duplicates skipped)`);
         } catch (genError) {
-          console.error(`Failed to generate questions for ${category}/${domainToUse}:`, genError);
+          console.error(`[QUESTION GENERATION] FAILED for ${category}/${domainToUse}:`, genError.message);
+          console.error(`[QUESTION GENERATION] Error details:`, {
+            category,
+            domainToUse,
+            errorType: genError.constructor?.name,
+            errorMessage: genError.message,
+            hasApiKey: !!process.env.OPENAI_API_KEY
+          });
           // If generation fails, we'll use saved questions as fallback
           if (genError.message?.includes('API key')) {
-            console.warn(`OpenAI API key issue for ${category} - will use saved questions only`);
+            console.warn(`[QUESTION GENERATION] OpenAI API key issue for ${category}/${domainToUse} - will use saved questions only`);
+          } else {
+            console.warn(`[QUESTION GENERATION] Generation failed for ${category}/${domainToUse} - will use saved questions as fallback`);
           }
         }
       }
@@ -569,8 +603,25 @@ app.post("/api/generate-questions", authMiddleware, async (req, res, next) => {
       validated: true
     })).filter(q => q.options.length >= 2 && q.question.length > 10);
     
-    triviaCategory.questions.push(...formattedQuestions);
+    // Add new questions to the database (avoid duplicates by checking question text)
+    let addedCount = 0;
+    let duplicateCount = 0;
+    
+    formattedQuestions.forEach(newQ => {
+      const isDuplicate = triviaCategory.questions.some(
+        existingQ => existingQ.question.trim().toLowerCase() === newQ.question.trim().toLowerCase()
+      );
+      if (!isDuplicate) {
+        triviaCategory.questions.push(newQ);
+        addedCount++;
+      } else {
+        duplicateCount++;
+        console.log(`Duplicate question skipped in /api/generate-questions: "${newQ.question.substring(0, 50)}..."`);
+      }
+    });
+    
     await triviaCategory.save();
+    console.log(`Generated questions: ${addedCount} added, ${duplicateCount} duplicates skipped`);
     
     res.json({ 
       status: "success", 
