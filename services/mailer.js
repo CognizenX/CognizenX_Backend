@@ -1,22 +1,28 @@
-const sgMail = require('@sendgrid/mail');
+const nodemailer = require('nodemailer');
 
-const FROM = process.env.SENDGRID_FROM_EMAIL;
-const API_KEY = process.env.SENDGRID_API_KEY;
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASS = process.env.EMAIL_PASS;
+// Default to gmail, but allow override
+const EMAIL_SERVICE = process.env.EMAIL_SERVICE || 'gmail';
 
-if (API_KEY) {
-  sgMail.setApiKey(API_KEY);
-}
+const transporter = nodemailer.createTransport({
+  service: EMAIL_SERVICE,
+  auth: {
+    user: EMAIL_USER,
+    pass: EMAIL_PASS ? EMAIL_PASS.replace(/\s+/g, '') : '',
+  },
+});
 
 async function sendPasswordReset(to, link) {
-  if (!API_KEY) {
-    console.warn('SENDGRID_API_KEY is not set; skipping email send. Link:', link);
+  if (!EMAIL_USER || !EMAIL_PASS) {
+    console.warn('EMAIL_USER or EMAIL_PASS not set; logging link only.');
+    console.log('Reset Link:', link);
     return;
   }
-  if (!FROM) throw new Error('SENDGRID_FROM_EMAIL is not configured');
 
-  const msg = {
+  const mailOptions = {
+    from: EMAIL_USER,
     to,
-    from: FROM,
     subject: 'Reset your password',
     text: `Click the following link to reset your password: ${link}`,
     html: `
@@ -27,7 +33,14 @@ async function sendPasswordReset(to, link) {
       <p>${link}</p>
     `,
   };
-  await sgMail.send(msg);
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`Password reset email sent to ${to}`);
+  } catch (err) {
+    console.error('Error sending email via Nodemailer:', err);
+    throw err;
+  }
 }
 
 module.exports = { sendPasswordReset };
