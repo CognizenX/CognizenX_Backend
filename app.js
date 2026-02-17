@@ -1,11 +1,23 @@
 // CognigenX Backend API
 // 
-// NEW AI ENDPOINTS (Added for production):
-// POST /api/generate-questions - Generate AI trivia questions
-// POST /api/generate-explanation - Generate AI explanations for answers
+// BACKWARD COMPATIBILITY STRATEGY:
+// - ALL existing endpoints are preserved and unchanged
+// - New endpoints are added ALONGSIDE existing ones (not replacing)
+// - No breaking changes to request/response formats
+// - Existing frontend continues to work without modification
 //
-// EXISTING ENDPOINTS (Unchanged for backward compatibility):
-// All existing auth, trivia, and user endpoints remain unchanged
+// EXISTING ENDPOINTS (Preserved - DO NOT MODIFY):
+// - GET /api/random-questions - Quiz generation (unchanged)
+// - POST /api/generate-questions - Admin question generation (unchanged)
+// - POST /api/generate-explanation - Explanation generation (unchanged)
+// - POST /api/add-questions - Manual question addition (unchanged)
+// - All /api/auth/* endpoints (unchanged)
+// - All /api/users endpoints (unchanged)
+//
+// NEW ENDPOINTS (Added alongside - Phase 2 of refactor):
+// - GET /api/user-quiz - Personalized quiz (new, doesn't replace /api/random-questions)
+// - POST /api/submit-quiz - Quiz submission with progress tracking (new)
+// - GET /api/analytics/* - Analytics endpoints (new)
 //
 // Security: OpenAI API keys moved from frontend to backend
 // Backward Compatibility: 100% maintained for existing App Store frontend

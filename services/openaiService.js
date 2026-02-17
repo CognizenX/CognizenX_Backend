@@ -229,17 +229,18 @@ const generateExplanation = async (question, userAnswer, correctAnswer) => {
       throw new Error('OpenAI API key is not configured. Please set OPENAI_API_KEY in your .env file.');
     }
     
-    const prompt = `Provide a concise 3-line explanation for the following trivia question: "${question}". 
-User's answer: "${userAnswer}".
-Correct answer: "${correctAnswer}".
-Explain why the correct answer is correct and provide brief context. Keep it simple and educational.`;
+    const prompt = `Question: "${question}"
+User answered: "${userAnswer}"
+Correct answer: "${correctAnswer}"
+
+Provide a SHORT, concise explanation (1-2 sentences maximum, under 50 words). Explain why the correct answer is right. Be brief and clear.`;
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: [
         { 
           role: 'system', 
-          content: 'You are an expert educator who explains trivia questions clearly and concisely. Focus on why the correct answer is right, not just what it is.' 
+          content: 'You are an expert educator who explains trivia questions in the shortest possible way. Maximum 1-2 sentences, under 50 words. Be concise and clear. Focus only on why the correct answer is right.' 
         },
         { 
           role: 'user', 
@@ -247,7 +248,7 @@ Explain why the correct answer is correct and provide brief context. Keep it sim
         }
       ],
       temperature: 0.3,
-      max_tokens: 100, // Reduced from 150 to be safer with limited quota
+      max_tokens: 60, // Reduced to 60 for shorter explanations (was 100)
     });
 
     const content = completion.choices[0]?.message?.content?.trim();
