@@ -38,6 +38,12 @@ const User = require("./models/User");
 const { connectDatabase } = require("./config/database");
 const { authLimiter, globalLimiter } = require("./config/rateLimiter");
 const { categories, categorizeArticle } = require("./config/categories");
+const {
+  formatQuestion,
+  formatQuestions,
+  deduplicateAgainst,
+  normaliseForResponse,
+} = require("./utils/questionFormatter");
 
 const app = express();
 
@@ -141,30 +147,13 @@ app.post("/api/add-questions", async (req, res, next) => {
       });
     }
 
-    let addedCount = 0;
-    let duplicateCount = 0;
-    
-    questions.forEach((question) => {
-      const newQuestion = {
-        question: question.question.trim(),
-        options: question.options,
-        correct_answer: question.correct_answer || question.correctAnswer,
-        subDomain: question.subDomain,
-      };
-
-      // Check for duplicates before adding
-      const isDuplicate = triviaCategory.questions.some(
-        existingQ => existingQ.question.trim().toLowerCase() === newQuestion.question.trim().toLowerCase()
-      );
-      
-      if (!isDuplicate) {
-        triviaCategory.questions.push(newQuestion);
-        addedCount++;
-      } else {
-        duplicateCount++;
-        console.log(`Duplicate question skipped: "${newQuestion.question.substring(0, 50)}..."`);
-      }
-    });
+    const formatted = questions.map(q => formatQuestion(q, { subDomain: q.subDomain }));
+    const { unique, addedCount, duplicateCount } = deduplicateAgainst(
+      formatted,
+      triviaCategory.questions,
+      '/api/add-questions'
+    );
+    triviaCategory.questions.push(...unique);
     
     console.log(`Added ${addedCount} new questions, skipped ${duplicateCount} duplicates`);
 
@@ -276,16 +265,7 @@ app.get("/api/questions", async (req, res, next) => {
 
     res.json({
       status: "success",
-      questions: triviaCategory.questions.map(q => ({
-        ...q.toObject(),
-        // Provide defaults for new fields if they don't exist
-        aiGenerated: q.aiGenerated || false,
-        difficulty: q.difficulty || 'medium',
-        validated: q.validated !== undefined ? q.validated : true,
-        // Ensure both field names exist for compatibility
-        correct_answer: q.correct_answer || q.correctAnswer || '',
-        correctAnswer: q.correct_answer || q.correctAnswer || ''
-      })),
+      questions: triviaCategory.questions.map(normaliseForResponse),
     });
   } catch (error) {
     console.log(error)
@@ -356,20 +336,11 @@ app.get('/api/random-questions', async (req, res) => {
           console.log(`[QUESTION GENERATION] OpenAI returned ${generatedQuestions.length} questions for ${category}/${domainToUse}`);
           
           // Format the generated questions
-          const formattedQuestions = generatedQuestions.map(q => ({
-            question: q.question.trim(),
-            options: q.options.map(opt => opt.trim()).filter(opt => opt.length > 0),
-            correct_answer: (q.correct_answer || q.correctAnswer || '').trim(),
-            // Backward compatibility: support both field names
-            correctAnswer: (q.correct_answer || q.correctAnswer || '').trim(),
+          const formattedQuestions = formatQuestions(generatedQuestions, {
+            category,
             subDomain: domainToUse,
-            category: category,
-            // New optional fields with defaults
             aiGenerated: true,
-            createdAt: new Date(),
-            difficulty: q.difficulty || 'medium',
-            validated: true
-          })).filter(q => q.options.length >= 2 && q.question.length > 10);
+          });
           
           // Add generated questions to the response
           newQuestions.push(...formattedQuestions);
@@ -385,21 +356,12 @@ app.get('/api/random-questions', async (req, res) => {
           }
           
           // Add new questions to the database (avoid duplicates by checking question text)
-          let addedCount = 0;
-          let duplicateCount = 0;
-          
-          formattedQuestions.forEach(newQ => {
-            const isDuplicate = triviaCategoryForSave.questions.some(
-              existingQ => existingQ.question.trim().toLowerCase() === newQ.question.trim().toLowerCase()
-            );
-            if (!isDuplicate) {
-              triviaCategoryForSave.questions.push(newQ);
-              addedCount++;
-            } else {
-              duplicateCount++;
-              console.log(`Duplicate question skipped in /api/random-questions: "${newQ.question.substring(0, 50)}..."`);
-            }
-          });
+          const { unique, addedCount, duplicateCount } = deduplicateAgainst(
+            formattedQuestions,
+            triviaCategoryForSave.questions,
+            '/api/random-questions'
+          );
+          triviaCategoryForSave.questions.push(...unique);
           
           await triviaCategoryForSave.save();
           console.log(`Generated and saved ${addedCount} new questions for ${category}/${domainToUse} (${duplicateCount} duplicates skipped)`);
@@ -459,16 +421,7 @@ app.get('/api/random-questions', async (req, res) => {
     const shuffledFinal = finalQuestions.sort(() => Math.random() - 0.5);
     
     // Ensure backward compatibility for existing questions
-    const compatibleQuestions = shuffledFinal.map(q => ({
-      ...q.toObject ? q.toObject() : q,
-      // Provide defaults for new fields if they don't exist
-      aiGenerated: q.aiGenerated !== undefined ? q.aiGenerated : false,
-      difficulty: q.difficulty || 'medium',
-      validated: q.validated !== undefined ? q.validated : true,
-      // Ensure both field names exist for compatibility
-      correct_answer: q.correct_answer || q.correctAnswer || '',
-      correctAnswer: q.correct_answer || q.correctAnswer || ''
-    }));
+    const compatibleQuestions = shuffledFinal.map(normaliseForResponse);
     
     res.json({ 
       questions: compatibleQuestions,
@@ -496,37 +449,19 @@ app.post("/api/generate-questions", authMiddleware, async (req, res, next) => {
       triviaCategory = new TriviaCategory({ category, domain: subDomain, questions: [] });
     }
     
-    const formattedQuestions = questions.map(q => ({
-      question: q.question.trim(),
-      options: q.options.map(opt => opt.trim()).filter(opt => opt.length > 0),
-      correct_answer: (q.correct_answer || q.correctAnswer || '').trim(),
-      // Backward compatibility: support both field names
-      correctAnswer: (q.correct_answer || q.correctAnswer || '').trim(),
-      subDomain: subDomain,
-      category: category,
-      // New optional fields with defaults
+    const formattedQuestions = formatQuestions(questions, {
+      category,
+      subDomain,
       aiGenerated: true,
-      createdAt: new Date(),
-      difficulty: q.difficulty || 'medium',
-      validated: true
-    })).filter(q => q.options.length >= 2 && q.question.length > 10);
+    });
     
     // Add new questions to the database (avoid duplicates by checking question text)
-    let addedCount = 0;
-    let duplicateCount = 0;
-    
-    formattedQuestions.forEach(newQ => {
-      const isDuplicate = triviaCategory.questions.some(
-        existingQ => existingQ.question.trim().toLowerCase() === newQ.question.trim().toLowerCase()
-      );
-      if (!isDuplicate) {
-        triviaCategory.questions.push(newQ);
-        addedCount++;
-      } else {
-        duplicateCount++;
-        console.log(`Duplicate question skipped in /api/generate-questions: "${newQ.question.substring(0, 50)}..."`);
-      }
-    });
+    const { unique, addedCount, duplicateCount } = deduplicateAgainst(
+      formattedQuestions,
+      triviaCategory.questions,
+      '/api/generate-questions'
+    );
+    triviaCategory.questions.push(...unique);
     
     await triviaCategory.save();
     console.log(`Generated questions: ${addedCount} added, ${duplicateCount} duplicates skipped`);
@@ -673,7 +608,9 @@ app.get('/api/users/:id', async (req, res) => {
   }
 })
 
+// Connect to database (skipped in test mode)
 connectDatabase();
+
 
 // Routes
 const authRoutes = require("./routes/auth");
