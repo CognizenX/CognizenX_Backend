@@ -23,7 +23,6 @@
 // Backward Compatibility: 100% maintained for existing App Store frontend
 
 const express = require("express");
-const mongoose = require("mongoose");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const Joi = require('joi');
@@ -34,13 +33,16 @@ const crypto = require("crypto");
 const TriviaCategory = require("./models/TriviaCategory");
 const UserActivity = require("./models/UserActivity");
 const User = require("./models/User");
-// Unified auth middleware (imported after User model)
+
+// Config imports
+const { connectDatabase } = require("./config/database");
+const { authLimiter, globalLimiter } = require("./config/rateLimiter");
+const { categories, categorizeArticle } = require("./config/categories");
 
 const app = express();
 
 // Security middleware
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
 
 // Middleware
 app.use(helmet({
@@ -56,44 +58,9 @@ app.use(helmet({
 app.use(cors());
 app.use(bodyParser.json({ limit: '10mb' }));
 
-// Rate limiting for auth endpoints
-// More lenient in development, reasonable in production
-const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV !== 'production';
-
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isDevelopment ? 50 : 15, // More lenient: 50 in dev, 15 in production (was 5)
-  message: {
-    message: 'Too many authentication attempts from this IP, please try again after 15 minutes.'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: (req) => {
-    // Skip rate limiting for localhost in development
-    if (isDevelopment && (req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1')) {
-      return true;
-    }
-    return false;
-  }
-});
-
-// Global rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isDevelopment ? 1000 : 100, // More lenient in development
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: (req) => {
-    // Skip rate limiting for localhost in development
-    if (isDevelopment && (req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1')) {
-      return true;
-    }
-    return false;
-  }
-});
-
+// Rate limiting (configured in config/rateLimiter.js)
 app.use('/api/auth', authLimiter);
-app.use(limiter);
+app.use(globalLimiter);
 
 // Input validation schemas
 const signupSchema = Joi.object({
@@ -144,79 +111,8 @@ const errorHandler = (err, req, res, next) => {
   });
 };
 
-// Database connection string: use environment variables only (no hardcoded fallback)
-const MONGO_URI = process.env.MONGO_URI || process.env.MONGO_URL;
-
 // Use unified authentication middleware
 const authMiddleware = require("./middleware/auth");
-
-
-
-//Categories
-// Categories with keywords for each sub-category
-const categories = {
-  entertainment: {
-    bollywood: {
-      movies: ['bollywood movies', 'film', 'cinema', 'director', 'actor', 'actress', 'screenplay'],
-      actors: ['bollywood actors', 'celebrity', 'star', 'actor', 'actress'],
-      songs: ['bollywood songs', 'music', 'singer', 'lyrics', 'album']
-    },
-    tollywood: ['tollywood', 'south indian film', 'telugu movie', 'tamil cinema'],
-    indianMusic: ['indian music', 'singer', 'composer', 'album', 'classical music', 'pop', 'instrumental'],
-    indianTVShows: ['tv show', 'indian television', 'soap opera', 'reality show'],
-    sports: {
-      cricket: ['cricket', 'bat', 'ball', 'wicket', 'batsman', 'bowler', 'tournament'],
-      otherSports: ['football', 'soccer', 'tennis', 'badminton', 'hockey', 'sports event']
-    }
-  },
-  politics: {
-    national: ['government', 'ministry', 'policy', 'cabinet', 'parliament', 'national law'],
-    northIndian: ['north india politics', 'state government', 'chief minister', 'legislature'],
-    southIndian: ['south india politics', 'andhra pradesh', 'karnataka', 'tamil nadu'],
-    freedomMovement: ['independence', 'freedom fighters', 'british rule', 'indian freedom movement']
-  },
-  history: {
-    ancientIndia: ['ancient india', 'vedic period', 'maurya empire', 'gupta dynasty', 'harappan'],
-    medievalIndia: ['medieval india', 'mughal empire', 'sultanate', 'rajput', 'maratha'],
-    modernIndia: ['modern india', 'british india', 'post-independence', 'partition', 'indian history']
-  },
-  geography: {
-    statesAndCapitals: ['state capital', 'indian states', 'capital city', 'map of india'],
-    riversAndMountains: ['rivers of india', 'mountains', 'himalayas', 'ganges', 'narmada'],
-    nationalParks: ['national park', 'wildlife sanctuary', 'forest reserve', 'nature park'],
-    librariesAndStatues: ['indian library', 'statue', 'monument', 'historical site']
-  },
-  generalKnowledge: {
-    economy: ['indian economy', 'gdp', 'inflation', 'stock market', 'trade', 'finance'],
-    festivals: ['festival', 'celebration', 'diwali', 'holi', 'eid', 'indian tradition'],
-    literature: ['literature', 'books', 'author', 'poet', 'novel', 'indian writer'],
-    scienceAndTechnology: ['science', 'technology', 'innovation', 'research', 'engineering']
-  },
-  mythology: {
-    hindu: ['hindu mythology', 'god', 'goddess', 'epic', 'mahabharata', 'ramayana'],
-    otherReligions: ['buddhism', 'jainism', 'sikhism', 'christianity', 'islam', 'mythology']
-  },
-  currentAffairs: {
-    economicAffairs: ['economy', 'budget', 'policy', 'investment', 'indian market'],
-    infrastructure: ['infrastructure', 'development', 'roads', 'transportation', 'urban planning'],
-    internationalRelations: ['foreign policy', 'diplomacy', 'alliance', 'india-un relations'],
-    healthAndEnvironment: ['health', 'environment', 'climate change', 'pollution', 'conservation']
-  }
-};
-// Utility: Categorize Articles
-function categorizeArticle(article) {
-  const content = `${article.title} ${article.snippet}`.toLowerCase();
-
-  for (let mainCategory in categories) {
-    for (let subCategory in categories[mainCategory]) {
-      const keywords = categories[mainCategory][subCategory];
-      if (Array.isArray(keywords) && keywords.filter((keyword) => content.includes(keyword)).length >= 2) {
-        return `${mainCategory}/${subCategory}`;
-      }
-    }
-  }
-  return "others";
-}
 
 // Sample route for base
 app.get("/", (req, res) => {
@@ -777,17 +673,7 @@ app.get('/api/users/:id', async (req, res) => {
   }
 })
 
-if (process.env.NODE_ENV !== "test") {
-  if (!MONGO_URI) {
-    console.error("MongoDB connection string missing: set MONGO_URI (or MONGO_URL)");
-  } else {
-    mongoose
-      .connect(MONGO_URI)
-      .then(() => console.log("MongoDB Connected"))
-      .catch((err) => console.log(err));
-  }
-}
-
+connectDatabase();
 
 // Routes
 const authRoutes = require("./routes/auth");
