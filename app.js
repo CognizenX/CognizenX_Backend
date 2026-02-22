@@ -25,7 +25,6 @@
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
-const Joi = require('joi');
 require("dotenv").config();
 
 const axios = require("axios");
@@ -67,18 +66,6 @@ app.use(bodyParser.json({ limit: '10mb' }));
 // Rate limiting (configured in config/rateLimiter.js)
 app.use('/api/auth', authLimiter);
 app.use(globalLimiter);
-
-// Input validation schemas
-const signupSchema = Joi.object({
-  name: Joi.string().min(2).max(50).pattern(/^[a-zA-Z\s]+$/).required(),
-  email: Joi.string().email().max(100).required(),
-  password: Joi.string().min(6).max(128).required() // Simple password - just min 6 chars, no complexity required
-});
-
-const loginSchema = Joi.object({
-  email: Joi.string().email().max(100).required(),
-  password: Joi.string().required()
-});
 
 // Centralized error handling middleware
 const errorHandler = require("./middleware/errorHandler");
