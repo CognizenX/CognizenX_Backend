@@ -81,41 +81,7 @@ const loginSchema = Joi.object({
 });
 
 // Centralized error handling middleware
-const errorHandler = (err, req, res, next) => {
-  console.error('Unhandled error:', err);
-
-  // Mongoose duplicate key error
-  if (err.code === 11000) {
-    const field = Object.keys(err.keyValue)[0];
-    return res.status(409).json({
-      message: `${field} already exists`,
-      field: field
-    });
-  }
-
-  // Joi validation error
-  if (err.isJoi) {
-    return res.status(400).json({
-      message: 'Validation error',
-      details: err.details.map(detail => ({
-        field: detail.path.join('.'),
-        message: detail.message
-      }))
-    });
-  }
-
-  // MongoDB connection errors
-  if (err.name === 'MongoNetworkError' || err.name === 'MongoTimeoutError') {
-    return res.status(503).json({
-      message: 'Database temporarily unavailable'
-    });
-  }
-
-  res.status(500).json({
-    message: 'Internal server error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-  });
-};
+const errorHandler = require("./middleware/errorHandler");
 
 // Use unified authentication middleware
 const authMiddleware = require("./middleware/auth");
