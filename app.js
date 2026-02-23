@@ -77,81 +77,6 @@ app.get("/api", (req, res) => {
   res.json({ message: "Backend running on Vercel!" });
 });
 
-
-
-//Endpoint for user preferences
-app.get("/api/user-preferences", authMiddleware, async (req, res, next) => {
-  try {
-    const userId = req.user._id; // From authMiddleware
-    console.log("Fetching preferences for User ID:", userId);
-
-    const activity = await UserActivity.findOne({ userId });
-    if (!activity || activity.categories.length === 0) {
-      return res.json({ preferences: [] }); // Return empty preferences if no activity found
-    }
-
-    const preferences = activity.categories.map((category) => ({
-      category: category.category,
-      subDomain: category.domain,
-      count: category.count,
-    }));
-
-    // Sort preferences by count (most frequent first)
-    preferences.sort((a, b) => b.count - a.count);
-
-    res.json({ preferences });
-  } catch (err) {
-    console.error("Error fetching preferences:", err);
-    next(err);
-  }
-});
-
-// Endpoint to Log User Activity
-app.post("/api/log-activity", authMiddleware, async (req, res, next) => {
-  const { category, domain } = req.body;
-  console.log("req.body", req.body)
-  console.log("category", category)
-  console.log("domain", domain)
-  if (!category || !domain) {
-    return res.status(400).json({ 
-      status: "error", 
-      message: "Both category and domain are required." 
-    });
-  }
-
-  try {
-    const userId = req.user._id; // Get user ID from authMiddleware
-    let activity = await UserActivity.findOne({ userId });
-
-    if (!activity) {
-      activity = new UserActivity({ userId, categories: [] });
-    }
-
-    const categoryIndex = activity.categories.findIndex(
-      (c) => c.category === category && c.domain === domain
-    );
-
-    if (categoryIndex >= 0) {
-      activity.categories[categoryIndex].count += 1;
-      activity.categories[categoryIndex].lastPlayed = new Date();
-    } else {
-      activity.categories.push({ 
-        category, 
-        domain,
-        count: 1, 
-        lastPlayed: new Date() 
-      });
-    }
-
-    await activity.save();
-
-    res.json({ status: "success", message: "Activity logged successfully." });
-  } catch (error) {
-    console.error("Error logging activity:", error);
-    next(error);
-  }
-});
-
 // Connect to database (skipped in test mode)
 connectDatabase();
 
@@ -160,11 +85,13 @@ const authRoutes = require("./routes/auth");
 const questionsRoutes = require("./routes/questions");
 const aiRoutes = require("./routes/ai");
 const usersRoutes = require("./routes/users");
+const activityRoutes = require("./routes/activity");
 
 app.use("/api/auth", authRoutes);
 app.use("/api", questionsRoutes);
 app.use("/api", aiRoutes);
 app.use("/api/users", usersRoutes);
+app.use("/api", activityRoutes);
 
 // Error handling middleware (must be last)
 app.use(errorHandler);
