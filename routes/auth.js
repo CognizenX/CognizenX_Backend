@@ -1,28 +1,43 @@
 const express = require("express");
 const crypto = require("crypto"); // Import the crypto module
 const bcrypt = require("bcryptjs");
-const Joi = require('joi');
+const { validate, signupSchema, loginSchema } = require("../middleware/validate");
 const User = require("../models/User");
 const UserActivity = require('../models/UserActivity');
 const mailer = require('../services/mailer');
-
-// Input validation schemas
-const signupSchema = Joi.object({
-  name: Joi.string().min(2).max(50).pattern(/^[a-zA-Z\s]+$/).required(),
-  email: Joi.string().email().max(100).required(),
-  password: Joi.string().min(6).max(128).required() // Simple password - just min 6 chars, no complexity required
-});
-
-const loginSchema = Joi.object({
-  email: Joi.string().email().max(100).required(),
-  password: Joi.string().required()
-});
 
 
 const router = express.Router();
 
 // Use unified authentication middleware
 const authMiddleware = require("../middleware/auth");
+
+/**
+ * Helper: Verify token was saved to database
+ * Critical for serverless functions where writes might not be immediately available
+ */
+const verifyTokenSave = async (userId, sessionToken, userEmail) => {
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    if (attempt > 1) {
+      await new Promise(resolve => setTimeout(resolve, 50 * attempt));
+    }
+
+    const verifiedUser = await User.findOne({ _id: userId, sessionToken });
+    if (verifiedUser && verifiedUser.sessionToken === sessionToken) {
+      console.log(`Token verified on attempt ${attempt} for user: ${userEmail}`);
+      return true;
+    }
+
+    if (attempt === 1) {
+      console.log(`Token verification attempt ${attempt} failed for user: ${userEmail}`);
+    }
+  }
+
+  console.error(`CRITICAL: Token not found in database after save for user: ${userEmail}`);
+  console.warn("Continuing anyway - token should be available shortly");
+  return false;
+};
 
 // Endpoint to fetch user ID
 router.get("/get-user-id", authMiddleware, async (req, res) => {
@@ -35,21 +50,9 @@ router.get("/get-user-id", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
-router.post("/signup", async (req, res) => {
+router.post("/signup", validate(signupSchema), async (req, res, next) => {
   try {
-    // Validate input using Joi schema
-    const { error, value } = signupSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({
-        message: 'Validation error',
-        details: error.details.map(detail => ({
-          field: detail.path.join('.'),
-          message: detail.message
-        }))
-      });
-    }
-
-    const { name, email, password } = value;
+    const { name, email, password } = req.body;
 
     console.log("Signup attempt for email:", email);
 
@@ -81,43 +84,8 @@ router.post("/signup", async (req, res) => {
       throw saveError;
     }
 
-    // Verify the token was actually saved to the database
-    // This is critical for serverless functions where writes might not be immediately available
-    // Optimized: Try once immediately, then retry only if needed (faster for most cases)
-    let verificationAttempts = 0;
-    const maxVerificationAttempts = 3; // Reduced from 5 to 3
-    let tokenVerified = false;
-
-    while (verificationAttempts < maxVerificationAttempts && !tokenVerified) {
-      verificationAttempts++;
-      
-      // Only delay on retries (not first attempt)
-      if (verificationAttempts > 1) {
-        await new Promise(resolve => setTimeout(resolve, 50 * verificationAttempts)); // Reduced delay
-      }
-
-      const verifiedUser = await User.findOne({
-        _id: newUser._id,
-        sessionToken: sessionToken
-      });
-
-      if (verifiedUser && verifiedUser.sessionToken === sessionToken) {
-        tokenVerified = true;
-        console.log(`Token verified in database on attempt ${verificationAttempts} for new user:`, email);
-        break; // Exit immediately on success
-      } else if (verificationAttempts === 1) {
-        // First attempt failed - log but continue
-        console.log(`Token verification attempt ${verificationAttempts} failed for new user:`, email);
-      }
-    }
-
-    // Only fail if all attempts failed (most cases will succeed on first try)
-    if (!tokenVerified) {
-      console.error("CRITICAL: Token was not found in database after save for new user:", email);
-      // Don't fail the request - token was saved, just verification failed (likely timing)
-      // The token will work on next request
-      console.warn("Continuing anyway - token should be available shortly");
-    }
+    // Verify token was saved to database
+    await verifyTokenSave(newUser._id, sessionToken, email);
 
     console.log("User created successfully:", email);
 
@@ -128,25 +96,12 @@ router.post("/signup", async (req, res) => {
     });
   } catch (err) {
     console.error("Signup Error:", err);
-    // Let the centralized error handler deal with it
-    throw err;
+    return next(err);
   }
 });
-router.post("/login", async (req, res) => {
+router.post("/login", validate(loginSchema), async (req, res, next) => {
   try {
-    // Validate input using Joi schema
-    const { error, value } = loginSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({
-        message: 'Validation error',
-        details: error.details.map(detail => ({
-          field: detail.path.join('.'),
-          message: detail.message
-        }))
-      });
-    }
-
-    const { email, password } = value;
+    const { email, password } = req.body;
 
     console.log("Login attempt for email:", email);
 
@@ -180,43 +135,8 @@ router.post("/login", async (req, res) => {
       throw saveError;
     }
 
-    // Verify the token was actually saved to the database
-    // This is critical for serverless functions where writes might not be immediately available
-    // Optimized: Try once immediately, then retry only if needed (faster for most cases)
-    let verificationAttempts = 0;
-    const maxVerificationAttempts = 3; // Reduced from 5 to 3
-    let tokenVerified = false;
-
-    while (verificationAttempts < maxVerificationAttempts && !tokenVerified) {
-      verificationAttempts++;
-      
-      // Only delay on retries (not first attempt)
-      if (verificationAttempts > 1) {
-        await new Promise(resolve => setTimeout(resolve, 50 * verificationAttempts)); // Reduced delay
-      }
-
-      const verifiedUser = await User.findOne({
-        _id: user._id,
-        sessionToken: sessionToken
-      });
-
-      if (verifiedUser && verifiedUser.sessionToken === sessionToken) {
-        tokenVerified = true;
-        console.log(`Token verified in database on attempt ${verificationAttempts} for user:`, email);
-        break; // Exit immediately on success
-      } else if (verificationAttempts === 1) {
-        // First attempt failed - log but continue
-        console.log(`Token verification attempt ${verificationAttempts} failed for user:`, email);
-      }
-    }
-
-    // Only fail if all attempts failed (most cases will succeed on first try)
-    if (!tokenVerified) {
-      console.error("CRITICAL: Token was not found in database after save for user:", email);
-      // Don't fail the request - token was saved, just verification failed (likely timing)
-      // The token will work on next request
-      console.warn("Continuing anyway - token should be available shortly");
-    }
+    // Verify token was saved to database
+    await verifyTokenSave(user._id, sessionToken, email);
 
     console.log("User logged in successfully:", email);
 
@@ -227,7 +147,7 @@ router.post("/login", async (req, res) => {
     });
   } catch (err) {
     console.error("Login Error:", err);
-    throw err; // Let centralized error handler deal with it
+    return next(err);
   }
 });
 
@@ -321,7 +241,7 @@ router.post('/reset-password', async (req, res) => {
 });
 
 // DELETE /api/auth/delete-account
-router.delete("/delete-account", authMiddleware, async (req, res) => {
+router.delete("/delete-account", authMiddleware, async (req, res, next) => {
   try {
     const userId = req.user._id;
 
@@ -337,7 +257,7 @@ router.delete("/delete-account", authMiddleware, async (req, res) => {
     res.json({ message: "Account deleted successfully." });
   } catch (err) {
     console.error("Error deleting account:", err);
-    throw err; // Let centralized error handler deal with it
+    return next(err);
   }
 });
 
