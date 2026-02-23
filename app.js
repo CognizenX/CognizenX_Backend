@@ -152,52 +152,19 @@ app.post("/api/log-activity", authMiddleware, async (req, res, next) => {
   }
 });
 
-
-app.get('/api/users', async (req, res) => {
-  try {
-    const users = await User.find();
-    res.json({users: users});
-  } catch (error) {
-    console.error('Error fetching users:', error);
-    res.status(500).json({ message: 'Failed to fetch users.' });
-  }
-});
-
-app.get('/api/users/:id', async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found.' });
-    }
-
-    const userActivities = await UserActivity.findOne({ userId: user._id });
-    
-    // Manually attach "activities" field
-    if (userActivities) {
-      user._doc.activities = userActivities.categories;
-    } else {
-      user._doc.activities = []; // empty if no activity found
-    }
-
-    res.json({user: user});
-  } catch (error) {
-    console.error("Error fetch specific user:", error);
-    res.status(500).json({ message: 'Failed to fetch users.' });
-  }
-})
-
 // Connect to database (skipped in test mode)
 connectDatabase();
-
 
 // Routes
 const authRoutes = require("./routes/auth");
 const questionsRoutes = require("./routes/questions");
 const aiRoutes = require("./routes/ai");
+const usersRoutes = require("./routes/users");
 
 app.use("/api/auth", authRoutes);
 app.use("/api", questionsRoutes);
 app.use("/api", aiRoutes);
+app.use("/api/users", usersRoutes);
 
 // Error handling middleware (must be last)
 app.use(errorHandler);
