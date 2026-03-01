@@ -34,7 +34,7 @@ const UserActivity = require("./models/UserActivity");
 const User = require("./models/User");
 
 // Config imports
-const { connectDatabase } = require("./config/database");
+const { connectDatabase, ensureDatabase } = require("./config/database");
 const { authLimiter, globalLimiter } = require("./config/rateLimiter");
 const { categories, categorizeArticle } = require("./config/categories");
 
@@ -60,6 +60,16 @@ app.use(bodyParser.json({ limit: '10mb' }));
 // Rate limiting (configured in config/rateLimiter.js)
 app.use('/api/auth', authLimiter);
 app.use(globalLimiter);
+
+// Ensure MongoDB is connected before handling requests (fixes serverless buffering timeout)
+app.use((req, res, next) => {
+  ensureDatabase()
+    .then(() => next())
+    .catch((err) => {
+      console.error("Database not available:", err?.message || err);
+      res.status(503).json({ status: "error", message: "Service temporarily unavailable" });
+    });
+});
 
 // Centralized error handling middleware
 const errorHandler = require("./middleware/errorHandler");
