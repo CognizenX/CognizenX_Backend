@@ -167,7 +167,7 @@ router.get("/random-questions", async (req, res, next) => {
           );
           triviaCategoryForSave.questions.push(...unique);
           
-          await triviaCategoryForSave.save();
+          //await triviaCategoryForSave.save();
           console.log(`Generated and saved ${addedCount} new questions for ${category}/${domainToUse} (${duplicateCount} duplicates skipped)`);
         } catch (genError) {
           console.error(`[QUESTION GENERATION] FAILED for ${category}/${domainToUse}:`, genError.message);
