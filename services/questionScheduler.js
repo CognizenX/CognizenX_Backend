@@ -367,4 +367,5 @@ module.exports = {
   runWeeklyGeneration,
   getSchedulerMetadata,
   updateSchedulerMetadata,
+  QUESTION_GENERATION_COUNT,
 };

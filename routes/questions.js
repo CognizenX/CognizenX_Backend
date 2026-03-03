@@ -7,8 +7,11 @@ const {
   normaliseForResponse,
 } = require("../utils/questionFormatter");
 const { generateQuestions } = require("../services/openaiService");
-const { runWeeklyGeneration } = require("../services/questionScheduler");
+const { runWeeklyGeneration, QUESTION_GENERATION_COUNT } = require("../services/questionScheduler");
 const { categories } = require("../config/categories");
+
+// Get email service for notifications
+const { sendCronAlert } = require("../services/mailer");
 
 const router = express.Router();
 
@@ -226,6 +229,15 @@ router.post("/internal/generate-weekly-questions", async (req, res, next) => {
     const totalPlanned = plan.reduce((sum, p) => sum + p.questionCount, 0);
     console.log(`[CRON] Total questions to generate: ${totalPlanned} (${QUESTION_GENERATION_COUNT} per category)`);
 
+    // Send "started" notification
+    console.log('[CRON] Sending start notification...');
+    await sendCronAlert('started', {
+      timestamp: new Date().toISOString(),
+      weekNumber: nextWeek,
+      categoriesCount: plan.length,
+      expectedQuestionsCount: totalPlanned
+    }).catch(err => console.error('[CRON] Error sending start notification:', err));
+
     // Run the weekly generation
     console.log('[CRON] Starting question generation...');
     const results = await runWeeklyGeneration(plan);
@@ -240,12 +252,28 @@ router.post("/internal/generate-weekly-questions", async (req, res, next) => {
 
     // Check for failures
     const failures = results.results.filter(r => !r.success);
+    const failureDetails = [];
     if (failures.length > 0) {
       console.warn(`[CRON] ⚠️ ${failures.length} categories had errors:`);
       failures.forEach(f => {
-        console.warn(`  - ${f.category}/${f.domain}: ${f.error}`);
+        const detail = `${f.category}/${f.domain}: ${f.error}`;
+        console.warn(`  - ${detail}`);
+        failureDetails.push(detail);
       });
     }
+
+    // Send "completed" notification
+    console.log('[CRON] Sending completion notification...');
+    await sendCronAlert('completed', {
+      success: results.success,
+      timestamp: new Date().toISOString(),
+      weekNumber: results.weekNumber,
+      totalQuestionsGenerated: results.totalQuestionsGenerated,
+      categoriesProcessed: results.categoriesProcessed,
+      categoriesWithQuestions: results.categoriesWithQuestions,
+      failures: failures.length,
+      failureDetails: failureDetails
+    }).catch(err => console.error('[CRON] Error sending completion notification:', err));
 
     // Return response to Vercel Cron
     res.json({
@@ -260,6 +288,20 @@ router.post("/internal/generate-weekly-questions", async (req, res, next) => {
 
   } catch (error) {
     console.error('[CRON] ❌ Error during weekly generation:', error);
+    
+    // Try to send error notification
+    const { sendCronAlert } = require("../services/mailer");
+    await sendCronAlert('completed', {
+      success: false,
+      timestamp: new Date().toISOString(),
+      weekNumber: 'N/A',
+      totalQuestionsGenerated: 0,
+      categoriesProcessed: 0,
+      categoriesWithQuestions: 0,
+      failures: 1,
+      failureDetails: [`Critical error: ${error.message}`]
+    }).catch(err => console.error('[CRON] Error sending error notification:', err));
+    
     res.status(500).json({
       success: false,
       error: error.message,
