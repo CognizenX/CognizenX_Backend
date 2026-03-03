@@ -1,11 +1,14 @@
 const { categories } = require('../config/categories');
 const UserActivity = require('../models/UserActivity');
 
-const HIGH_TIER_QUESTION_COUNT = 30;
-const MEDIUM_TIER_QUESTION_COUNT = 20;
-const LOW_TIER_QUESTION_COUNT = 10;
+const isDevelopment =
+  process.env.NODE_ENV === "development" || process.env.NODE_ENV !== "production";
+
+const HIGH_TIER_QUESTION_COUNT = isDevelopment ? 3 : 30;     // Production: 30
+const MEDIUM_TIER_QUESTION_COUNT = isDevelopment ? 2 : 20;   // Production: 20
+const LOW_TIER_QUESTION_COUNT = isDevelopment ? 1 : 10;      // Production: 10
 const UNUSED_QUESTION_COUNT = 0;
-const BOOTSTRAP_QUESTION_COUNT = 10; // For initial seeding phase
+const BOOTSTRAP_QUESTION_COUNT = isDevelopment ? 1 : 10;     // Production: 10
 
 // Calculate global usage statistics across all users
 // Aggregates which categories are most popular
