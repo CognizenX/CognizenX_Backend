@@ -10,7 +10,7 @@
 
 const TriviaCategory = require('../models/TriviaCategory');
 const SchedulerMetadata = require('../models/SchedulerMetadata');
-const { generateQuestions } = require('./openaiService');
+const { generateQuestions, generateExplanation } = require('./openaiService');
 const { formatQuestions, deduplicateAgainst } = require('../utils/questionFormatter');
 
 /**
@@ -51,8 +51,36 @@ async function generateQuestionsForCategory(category, domain, count, retries = 3
         `[GENERATOR] OpenAI returned ${generatedQuestions.length} questions for ${category}/${domain}`
       );
 
+      const generatedQuestionsWithExplanations = await Promise.all(
+        generatedQuestions.map(async (questionObj) => {
+          try {
+            const explanation = await generateExplanation(
+              questionObj.question,
+              questionObj.correct_answer,
+              questionObj.correct_answer
+            );
+
+            return {
+              ...questionObj,
+              explanation,
+              explanationGeneratedAt: new Date(),
+            };
+          } catch (explanationError) {
+            console.warn(
+              `[GENERATOR] Explanation generation failed for question in ${category}/${domain}:`,
+              explanationError.message
+            );
+
+            return {
+              ...questionObj,
+              explanation: '',
+            };
+          }
+        })
+      );
+
       // Adds metadata like subDomain, aiGenerated flag, difficulty, createdAt
-      const formattedQuestions = formatQuestions(generatedQuestions, {
+      const formattedQuestions = formatQuestions(generatedQuestionsWithExplanations, {
         category,
         subDomain: domain,
         aiGenerated: true,
