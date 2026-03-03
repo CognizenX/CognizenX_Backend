@@ -7,6 +7,8 @@ const {
   normaliseForResponse,
 } = require("../utils/questionFormatter");
 const { generateQuestions } = require("../services/openaiService");
+const { runWeeklyGeneration } = require("../services/questionScheduler");
+const { getGenerationPlan } = require("../services/usageAnalytics");
 
 const router = express.Router();
 
@@ -235,6 +237,120 @@ router.get("/random-questions", async (req, res, next) => {
   } catch (error) {
     console.error('Error fetching random questions:', error);
     next(error);
+  }
+});
+
+// POST /api/internal/generate-weekly-questions - Protected endpoint for Vercel Cron
+// This endpoint is called weekly by Vercel Cron to automatically generate questions
+router.post("/internal/generate-weekly-questions", async (req, res, next) => {
+  try {
+    // Authentication - Check Bearer token
+    const authHeader = req.headers.authorization;
+    const expectedToken = process.env.CRON_SECRET;
+
+    // Security check: Make sure CRON_SECRET is configured
+    if (!expectedToken) {
+      console.error('[CRON] CRON_SECRET not configured in environment variables');
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Server configuration error' 
+      });
+    }
+
+    // Verify Bearer token format: "Bearer <token>"
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.warn('[CRON] Unauthorized request - missing or invalid Authorization header');
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Unauthorized - Bearer token required' 
+      });
+    }
+
+    // Extract the actual token (remove "Bearer " prefix)
+    const token = authHeader.substring(7); // "Bearer " is 7 characters
+
+    // Compare provided token with expected token
+    if (token !== expectedToken) {
+      console.warn('[CRON] Unauthorized request - invalid token');
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Unauthorized - Invalid token' 
+      });
+    }
+
+    console.log('[CRON] ✅ Authentication successful');
+
+    // Get current week number and generation plan
+    // The scheduler service tracks which week we're on (starts at 1)
+    const { getSchedulerMetadata } = require("../services/questionScheduler");
+    const metadata = await getSchedulerMetadata();
+    const nextWeek = metadata.weekNumber + 1;
+
+    console.log(`[CRON] Current week: ${metadata.weekNumber}, Next week: ${nextWeek}`);
+    console.log(`[CRON] Total questions generated so far: ${metadata.totalQuestionsGenerated}`);
+
+    // Get the generation plan based on usage analytics
+    const plan = await getGenerationPlan(nextWeek);
+
+    console.log(`[CRON] Generation plan retrieved: ${plan.length} categories to process`);
+
+    // Show tier summary
+    const tierSummary = {};
+    plan.forEach(p => {
+      if (!tierSummary[p.tier]) {
+        tierSummary[p.tier] = { count: 0, questions: 0 };
+      }
+      tierSummary[p.tier].count++;
+      tierSummary[p.tier].questions += p.questionCount;
+    });
+
+    console.log('[CRON] Tier distribution:');
+    Object.entries(tierSummary).forEach(([tier, data]) => {
+      console.log(`  ${tier.toUpperCase()}: ${data.count} categories, ${data.questions} questions`);
+    });
+
+    const totalPlanned = plan.reduce((sum, p) => sum + p.questionCount, 0);
+    console.log(`[CRON] Total questions to generate: ${totalPlanned}`);
+
+    // Run the weekly generation
+    console.log('[CRON] Starting question generation...');
+    const results = await runWeeklyGeneration(plan);
+
+    // Log results
+    console.log('[CRON] ✅ Generation complete!');
+    console.log(`[CRON] Status: ${results.success ? 'SUCCESS' : 'FAILED'}`);
+    console.log(`[CRON] Week: ${results.weekNumber}`);
+    console.log(`[CRON] Questions generated: ${results.totalQuestionsGenerated}`);
+    console.log(`[CRON] Categories processed: ${results.categoriesProcessed}`);
+    console.log(`[CRON] Categories with questions: ${results.categoriesWithQuestions}`);
+
+    // Check for failures
+    const failures = results.results.filter(r => !r.success);
+    if (failures.length > 0) {
+      console.warn(`[CRON] ⚠️ ${failures.length} categories had errors:`);
+      failures.forEach(f => {
+        console.warn(`  - ${f.category}/${f.domain}: ${f.error}`);
+      });
+    }
+
+    // Return response to Vercel Cron
+    res.json({
+      success: results.success,
+      weekNumber: results.weekNumber,
+      totalQuestionsGenerated: results.totalQuestionsGenerated,
+      categoriesProcessed: results.categoriesProcessed,
+      categoriesWithQuestions: results.categoriesWithQuestions,
+      failures: failures.length,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('[CRON] ❌ Error during weekly generation:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
