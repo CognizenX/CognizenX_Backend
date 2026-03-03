@@ -52,7 +52,7 @@ router.get("/get-user-id", authMiddleware, async (req, res) => {
 });
 router.post("/signup", validate(signupSchema), async (req, res, next) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, age, gender, countryOfOrigin, yearsOfEducation } = req.body;
 
     console.log("Signup attempt for email:", email);
 
@@ -72,7 +72,13 @@ router.post("/signup", validate(signupSchema), async (req, res, next) => {
       email,
       password: hashedPassword,
       sessionToken,
-      tokenExpiresAt: expiresAt
+      tokenExpiresAt: expiresAt,
+
+      // Background fields
+      age,
+      gender,
+      countryOfOrigin,
+      yearsOfEducation,
     });
 
     // Save the user to database
