@@ -1,5 +1,5 @@
 /**
- * Orchestrates bulk pre-generation of questions based on usage tiers
+ * Orchestrates bulk pre-generation of questions
  * 
  * Key Functions:
  * - generateQuestionsForCategory() - Generate and save questions for one category/domain
@@ -13,14 +13,17 @@ const SchedulerMetadata = require('../models/SchedulerMetadata');
 const { generateQuestions, generateExplanation } = require('./openaiService');
 const { formatQuestions, deduplicateAgainst } = require('../utils/questionFormatter');
 
+const QUESTION_GENERATION_COUNT = 10; 
+
 /**
  * Generate and save questions for a single category/domain
  * 
  * PARAMETERS:
  * - category: e.g. "politics"
  * - domain: e.g. "national"
- * - count: how many questions to generate 
  * - retries: how many times to retry on failure
+ * 
+ * NOTE: Uses QUESTION_GENERATION_COUNT constant
  * 
  * RETURNS:
  * {
@@ -30,18 +33,18 @@ const { formatQuestions, deduplicateAgainst } = require('../utils/questionFormat
  *   error?: string
  * }
  */
-async function generateQuestionsForCategory(category, domain, count, retries = 3) {
+async function generateQuestionsForCategory(category, domain, retries = 3) {
   let lastError;
 
   // Retry logic: attempt generation up to 3 times in case of API failures
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       console.log(
-        `[GENERATOR] Generating ${count} questions for "${category}/${domain}" (Attempt ${attempt}/${retries})`
+        `[GENERATOR] Generating ${QUESTION_GENERATION_COUNT} questions for "${category}/${domain}" (Attempt ${attempt}/${retries})`
       );
 
       // Call generateQuestions() from routes/ai.js
-      const generatedQuestions = await generateQuestions(category, domain, count);
+      const generatedQuestions = await generateQuestions(category, domain, QUESTION_GENERATION_COUNT);
 
       if (!generatedQuestions || generatedQuestions.length === 0) {
         throw new Error('OpenAI returned no questions');
@@ -52,35 +55,78 @@ async function generateQuestionsForCategory(category, domain, count, retries = 3
       );
 
       const generatedQuestionsWithExplanations = await Promise.all(
-        generatedQuestions.map(async (questionObj) => {
-          try {
-            const explanation = await generateExplanation(
-              questionObj.question,
-              questionObj.correct_answer,
-              questionObj.correct_answer
-            );
+        generatedQuestions.map(async (questionObj, index) => {
+          // Retry explanation generation up to 3 times
+          let explanation = null;
+          let lastExplanationError = null;
+          const maxExplanationRetries = 3;
 
-            return {
-              ...questionObj,
-              explanation,
-              explanationGeneratedAt: new Date(),
-            };
-          } catch (explanationError) {
-            console.warn(
-              `[GENERATOR] Explanation generation failed for question in ${category}/${domain}:`,
-              explanationError.message
-            );
-
-            return {
-              ...questionObj,
-              explanation: '',
-            };
+          for (let explanationAttempt = 1; explanationAttempt <= maxExplanationRetries; explanationAttempt++) {
+            try {
+              explanation = await generateExplanation(
+                questionObj.question,
+                questionObj.correct_answer,
+                questionObj.correct_answer
+              );
+              break; // Success, exit retry loop
+            } catch (explanationError) {
+              lastExplanationError = explanationError;
+              if (explanationAttempt < maxExplanationRetries) {
+                console.warn(
+                  `[GENERATOR] ⚠️  Explanation attempt ${explanationAttempt}/${maxExplanationRetries} failed for question ${index + 1}, retrying...`
+                );
+                await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1s before retry
+              }
+            }
           }
+
+          // If all retries failed, skip this question
+          if (!explanation) {
+            console.warn(
+              `[GENERATOR] ❌ Explanation generation failed after ${maxExplanationRetries} attempts for question ${index + 1} in ${category}/${domain}:`,
+              lastExplanationError?.message
+            );
+            console.warn(`[GENERATOR] Skipping this question (won't be saved)`);
+            return null;
+          }
+
+          // Success - we have the question with explanation
+          const questionWithExplanation = {
+            ...questionObj,
+            explanation,
+            explanationGeneratedAt: new Date(),
+          };
+
+          // Log question immediately after it's generated
+          console.log(`\n[GENERATOR] Question ${index + 1}/${QUESTION_GENERATION_COUNT} for "${category}/${domain}":`);
+          console.log(`   ${questionObj.question}`);
+          if (questionObj.options && questionObj.options.length > 0) {
+            questionObj.options.forEach((opt, optIdx) => {
+              const isCorrect = opt === questionObj.correct_answer ? ' ✓' : '';
+              console.log(`   ${String.fromCharCode(65 + optIdx)}) ${opt}${isCorrect}`);
+            });
+          }
+          if (explanation) {
+            console.log(`${explanation}`);
+          }
+
+          return questionWithExplanation;
         })
       );
 
+      // Filter out questions that failed explanation generation
+      const validQuestions = generatedQuestionsWithExplanations.filter(q => q !== null);
+
+      if (validQuestions.length === 0) {
+        throw new Error('No valid questions with explanations after generation');
+      }
+
+      console.log(
+        `\n[GENERATOR] ✅ Successfully generated ${validQuestions.length} questions with explanations (${generatedQuestions.length - validQuestions.length} skipped)\n`
+      );
+
       // Adds metadata like subDomain, aiGenerated flag, difficulty, createdAt
-      const formattedQuestions = formatQuestions(generatedQuestionsWithExplanations, {
+      const formattedQuestions = formatQuestions(validQuestions, {
         category,
         subDomain: domain,
         aiGenerated: true,
@@ -226,11 +272,10 @@ async function updateSchedulerMetadata(totalQuestionsGenerated = 0) {
  * 
  * WHAT IT DOES:
  * 1. Gets current scheduler metadata (to know the week number)
- * 2. Gets the generation plan from usageAnalytics
- * 3. Loops through each category in the plan
- * 4. Calls generateQuestionsForCategory() for each
- * 5. Tracks results
- * 6. Updates metadata
+ * 2. Loops through each category in the plan
+ * 3. Calls generateQuestionsForCategory() for each
+ * 4. Tracks results
+ * 5. Updates metadata
  * 
  * PARAMETERS:
  * - generationPlan: Array of {category, domain, questionCount, tier, ...}
@@ -258,36 +303,19 @@ async function runWeeklyGeneration(generationPlan) {
 
     console.log(`[SCHEDULER] Week: ${weekNumber}`);
     console.log(`[SCHEDULER] Categories to process: ${generationPlan.length}`);
-    console.log(`[SCHEDULER] Strategy: ${weekNumber <= 2 ? 'Bootstrap (30q all)' : 'Dynamic (tier-based)'}\n`);
+    console.log(`[SCHEDULER] Generating 10 questions per category\n`);
 
     const results = [];
     let totalQuestionsGenerated = 0;
     let categoriesWithQuestions = 0;
 
     for (const planItem of generationPlan) {
-      const { category, domain, questionCount, tier } = planItem;
+      const { category, domain, tier } = planItem;
 
-      // Skip categories marked for skipping (tier = 'unused')
-      if (questionCount === 0) {
-        console.log(
-          `[SCHEDULER] Skipping ${category}/${domain} (tier: ${tier}, 0 questions)`
-        );
-        results.push({
-          category,
-          domain,
-          tier,
-          success: true,
-          questionsGenerated: 0,
-          duplicates: 0,
-        });
-        continue;
-      }
-
-      // Generate questions for this category
+      // Generate questions for this category (always uses QUESTION_GENERATION_COUNT)
       const result = await generateQuestionsForCategory(
         category,
-        domain,
-        questionCount
+        domain
       );
 
       results.push({
