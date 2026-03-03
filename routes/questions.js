@@ -8,7 +8,7 @@ const {
 } = require("../utils/questionFormatter");
 const { generateQuestions } = require("../services/openaiService");
 const { runWeeklyGeneration } = require("../services/questionScheduler");
-const { getGenerationPlan } = require("../services/usageAnalytics");
+const { categories } = require("../config/categories");
 
 const router = express.Router();
 
@@ -201,8 +201,7 @@ router.post("/internal/generate-weekly-questions", async (req, res, next) => {
 
     console.log('[CRON] ✅ Authentication successful');
 
-    // Get current week number and generation plan
-    // The scheduler service tracks which week we're on (starts at 1)
+    // Get current week number
     const { getSchedulerMetadata } = require("../services/questionScheduler");
     const metadata = await getSchedulerMetadata();
     const nextWeek = metadata.weekNumber + 1;
@@ -210,28 +209,22 @@ router.post("/internal/generate-weekly-questions", async (req, res, next) => {
     console.log(`[CRON] Current week: ${metadata.weekNumber}, Next week: ${nextWeek}`);
     console.log(`[CRON] Total questions generated so far: ${metadata.totalQuestionsGenerated}`);
 
-    // Get the generation plan based on usage analytics
-    const plan = await getGenerationPlan(nextWeek);
-
-    console.log(`[CRON] Generation plan retrieved: ${plan.length} categories to process`);
-
-    // Show tier summary
-    const tierSummary = {};
-    plan.forEach(p => {
-      if (!tierSummary[p.tier]) {
-        tierSummary[p.tier] = { count: 0, questions: 0 };
+    // Create simple generation plan: 10 questions per category/domain
+    const plan = [];
+    for (const category in categories) {
+      for (const domain in categories[category]) {
+        plan.push({
+          category,
+          domain,
+          questionCount: QUESTION_GENERATION_COUNT,
+          tier: 'standard'
+        });
       }
-      tierSummary[p.tier].count++;
-      tierSummary[p.tier].questions += p.questionCount;
-    });
+    }
 
-    console.log('[CRON] Tier distribution:');
-    Object.entries(tierSummary).forEach(([tier, data]) => {
-      console.log(`  ${tier.toUpperCase()}: ${data.count} categories, ${data.questions} questions`);
-    });
-
+    console.log(`[CRON] Generation plan: ${plan.length} categories to process`);
     const totalPlanned = plan.reduce((sum, p) => sum + p.questionCount, 0);
-    console.log(`[CRON] Total questions to generate: ${totalPlanned}`);
+    console.log(`[CRON] Total questions to generate: ${totalPlanned} (${QUESTION_GENERATION_COUNT} per category)`);
 
     // Run the weekly generation
     console.log('[CRON] Starting question generation...');
