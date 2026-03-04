@@ -6,7 +6,6 @@ const {
   deduplicateAgainst,
   normaliseForResponse,
 } = require("../utils/questionFormatter");
-const { generateQuestions } = require("../services/openaiService");
 
 const router = express.Router();
 
@@ -89,10 +88,11 @@ router.get("/random-questions", async (req, res, next) => {
   }
 
   const categoryList = categories.split(',');
-  const shouldUseSaved = useSaved === 'true' || useSaved === true;
+  // We no longer generate questions via OpenAI from this endpoint.
+  // Always serve questions from the saved bank.
+  const shouldUseSaved = true;
 
   try {
-    let newQuestions = [];
     let savedQuestions = [];
     
     // For each category, generate new questions and get saved ones
@@ -131,82 +131,14 @@ router.get("/random-questions", async (req, res, next) => {
       
       // Try to generate NEW questions for this quiz session (10 new questions needed)
       if (!shouldUseSaved) {
-        console.log(`[QUESTION GENERATION] Starting generation for category: "${category}", domain: "${domainToUse}"`);
-        
-        try {
-          // Generate 10 new questions for this category/subDomain
-          console.log(`[QUESTION GENERATION] Calling OpenAI API for ${category}/${domainToUse}...`);
-          const generatedQuestions = await generateQuestions(category, domainToUse, 10);
-          console.log(`[QUESTION GENERATION] OpenAI returned ${generatedQuestions.length} questions for ${category}/${domainToUse}`);
-          
-          // Format the generated questions
-          const formattedQuestions = formatQuestions(generatedQuestions, {
-            category,
-            subDomain: domainToUse,
-            aiGenerated: true,
-          });
-          
-          // Add generated questions to the response
-          newQuestions.push(...formattedQuestions);
-          
-          // Save generated questions to database for future reference
-          let triviaCategoryForSave = await TriviaCategory.findOne({ category, domain: domainToUse });
-          if (!triviaCategoryForSave) {
-            triviaCategoryForSave = new TriviaCategory({ 
-              category, 
-              domain: domainToUse, 
-              questions: [] 
-            });
-          }
-          
-          // Add new questions to the database (avoid duplicates by checking question text)
-          const { unique, addedCount, duplicateCount } = deduplicateAgainst(
-            formattedQuestions,
-            triviaCategoryForSave.questions,
-            '/api/random-questions'
-          );
-          triviaCategoryForSave.questions.push(...unique);
-          
-          //await triviaCategoryForSave.save();
-          console.log(`Generated and saved ${addedCount} new questions for ${category}/${domainToUse} (${duplicateCount} duplicates skipped)`);
-        } catch (genError) {
-          console.error(`[QUESTION GENERATION] FAILED for ${category}/${domainToUse}:`, genError.message);
-          console.error(`[QUESTION GENERATION] Error details:`, {
-            category,
-            domainToUse,
-            errorType: genError.constructor?.name,
-            errorMessage: genError.message,
-            hasApiKey: !!process.env.OPENAI_API_KEY
-          });
-          // If generation fails, we'll use saved questions as fallback
-          if (genError.message?.includes('API key')) {
-            console.warn(`[QUESTION GENERATION] OpenAI API key issue for ${category}/${domainToUse} - will use saved questions only`);
-          } else {
-            console.warn(`[QUESTION GENERATION] Generation failed for ${category}/${domainToUse} - will use saved questions as fallback`);
-          }
-        }
+        // no-op
       }
     }
     
-    // Use 10 new AI-generated questions, or fallback to saved questions if generation fails
+    // Use up to 10 questions from the saved bank.
     let finalQuestions = [];
     
-    if (newQuestions.length >= 10) {
-      // We have enough new questions - use all 10
-      finalQuestions = newQuestions.sort(() => Math.random() - 0.5).slice(0, 10);
-    } else if (newQuestions.length > 0) {
-      // We have some new questions but not enough - use what we have (shouldn't happen normally)
-      console.log(`Warning: Only generated ${newQuestions.length} questions, expected 10`);
-      finalQuestions = newQuestions.sort(() => Math.random() - 0.5);
-      // Try to fill remaining slots from saved questions if available
-      if (savedQuestions.length > 0 && finalQuestions.length < 10) {
-        const neededFromSaved = 10 - finalQuestions.length;
-        const shuffledSaved = savedQuestions.sort(() => Math.random() - 0.5).slice(0, neededFromSaved);
-        finalQuestions = [...finalQuestions, ...shuffledSaved];
-      }
-    } else if (savedQuestions.length > 0) {
-      // Can't generate new questions - use all 10 from bank as fallback
-      console.log(`Using all ${Math.min(savedQuestions.length, 10)} questions from bank (generation failed)`);
+    if (savedQuestions.length > 0) {
       finalQuestions = savedQuestions.sort(() => Math.random() - 0.5).slice(0, 10);
     }
     
@@ -216,8 +148,8 @@ router.get("/random-questions", async (req, res, next) => {
         totalAvailable: 0,
         generated: 0,
         message: subDomain 
-          ? `No questions available for ${categoryList.join(', ')} / ${subDomain}. Please check OpenAI API configuration.`
-          : 'No questions available for the selected categories. Please check OpenAI API configuration.'
+          ? `No questions available for ${categoryList.join(', ')} / ${subDomain}.`
+          : 'No questions available for the selected categories.'
       });
     }
     
@@ -230,7 +162,7 @@ router.get("/random-questions", async (req, res, next) => {
     res.json({ 
       questions: compatibleQuestions,
       totalAvailable: finalQuestions.length,
-      generated: compatibleQuestions.filter(q => q.aiGenerated).length
+      generated: 0
     });
   } catch (error) {
     console.error('Error fetching random questions:', error);

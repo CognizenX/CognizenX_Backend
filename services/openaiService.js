@@ -5,6 +5,15 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+function makeHttpError(status, message, code) {
+  const err = new Error(message);
+  err.status = status;
+  err.statusCode = status;
+  err.statusMessage = message;
+  if (code) err.code = code;
+  return err;
+}
+
 const generateQuestions = async (category, subDomain, count = 10) => {
   try {
     // Check if OpenAI API key is configured and valid
@@ -207,15 +216,15 @@ const generateQuestions = async (category, subDomain, count = 10) => {
       count
     });
     
-    // Provide more specific error messages
-    if (error.message?.includes('API key')) {
-      throw new Error('OpenAI API key is invalid or missing. Please check your configuration.');
-    } else if (error.message?.includes('rate limit')) {
-      throw new Error('OpenAI API rate limit exceeded. Please try again later.');
-    } else if (error.message?.includes('insufficient_quota')) {
-      throw new Error('OpenAI API quota exceeded. Please check your account billing.');
+    // Provide more specific error messages + proper HTTP codes
+    if (error.message?.includes('API key') || error.status === 401) {
+      throw makeHttpError(401, 'OpenAI API key is invalid or missing. Please check your configuration.', 'OPENAI_AUTH');
+    } else if (error.message?.includes('rate limit') || error.status === 429) {
+      throw makeHttpError(429, 'OpenAI API rate limit exceeded. Please try again later.', 'OPENAI_RATE_LIMIT');
+    } else if (error.message?.includes('insufficient_quota') || error.message?.includes('quota')) {
+      throw makeHttpError(429, 'OpenAI API quota exceeded. Please check your account billing.', 'OPENAI_QUOTA');
     } else {
-      throw new Error(`Failed to generate questions: ${error.message}`);
+      throw makeHttpError(500, `Failed to generate questions. ${error.message || ''}`.trim(), 'OPENAI_ERROR');
     }
   }
 };
@@ -265,15 +274,15 @@ Provide a SHORT, concise explanation (1-2 sentences maximum, under 50 words). Ex
       question: question?.substring(0, 50) + '...'
     });
     
-    // Provide more specific error messages
+    // Provide more specific error messages + proper HTTP codes
     if (error.message?.includes('API key') || error.status === 401) {
-      throw new Error('OpenAI API key is invalid or missing. Please check your configuration.');
+      throw makeHttpError(401, 'OpenAI API key is invalid or missing. Please check your configuration.', 'OPENAI_AUTH');
     } else if (error.message?.includes('rate limit') || error.status === 429) {
-      throw new Error('OpenAI API rate limit exceeded. Please try again later.');
+      throw makeHttpError(429, 'OpenAI API rate limit exceeded. Please try again later.', 'OPENAI_RATE_LIMIT');
     } else if (error.message?.includes('insufficient_quota') || error.message?.includes('quota')) {
-      throw new Error('OpenAI API quota exceeded. Please check your account billing.');
+      throw makeHttpError(429, 'OpenAI API quota exceeded. Please check your account billing.', 'OPENAI_QUOTA');
     } else {
-      throw new Error(`Failed to generate explanation: ${error.message}`);
+      throw makeHttpError(500, `Failed to generate explanation. ${error.message || ''}`.trim(), 'OPENAI_ERROR');
     }
   }
 };

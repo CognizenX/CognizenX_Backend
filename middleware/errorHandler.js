@@ -39,6 +39,16 @@ const errorHandler = (err, req, res, next) => {
     });
   }
 
+  // Explicit HTTP errors (e.g., OpenAI rate limits)
+  const explicitStatus = err.statusCode || err.status;
+  if (explicitStatus && Number.isInteger(explicitStatus)) {
+    return res.status(explicitStatus).json({
+      message: err.statusMessage || err.message || "Request failed",
+      ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
+      ...(err.code && { code: err.code }),
+    });
+  }
+
   // Default 500 error with optional custom message
   res.status(500).json({
     message: err.statusMessage || "Internal server error",
