@@ -28,6 +28,17 @@ const errorHandler = (err, req, res, next) => {
     });
   }
 
+  // Mongoose schema validation errors
+  if (err.name === "ValidationError") {
+    return res.status(400).json({
+      message: "Validation error",
+      details: Object.values(err.errors || {}).map((e) => ({
+        field: e.path,
+        message: e.message,
+      })),
+    });
+  }
+
   // Default 500 error with optional custom message
   res.status(500).json({
     message: err.statusMessage || "Internal server error",
