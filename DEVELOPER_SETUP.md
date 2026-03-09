@@ -101,6 +101,13 @@ npm test
 
 # Start with nodemon (auto-restart)
 npm run dev
+
+# Export analytics-friendly CSV/JSON
+# Prereq: set MONGO_URI (or MONGO_URL)
+npm run analytics:export
+
+# See all export options
+node scripts/analytics/cli.js export --help
 ```
 
 ---

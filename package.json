@@ -6,7 +6,8 @@
     "test": "jest",
     "start": "node index.js",
     "build": "echo 'No build step needed'",
-    "vercel-build": "echo 'Nothing to build for backend'"
+    "vercel-build": "echo 'Nothing to build for backend'",
+    "analytics:export": "node scripts/analytics/cli.js export --daily --users"
   },
   "jest": {
     "setupFilesAfterEnv": [

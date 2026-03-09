@@ -1,0 +1,4 @@
+date,category,subDomain,attempts,correct,accuracy,avgTimeMs,uniqueUsers
+2026-03-04,politics,National,20,10,0.5,485,2
+2026-03-08,geography,States and Capitals,10,4,0.4,619,1
+2026-03-08,politics,National,10,6,0.6,278,1
