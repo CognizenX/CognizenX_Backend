@@ -82,11 +82,57 @@ CognizenX_Backend/
 │   ├── openaiService.js
 │   └── questionTemplates.js
 ├── scripts/             # Utility scripts
-│   └── migrate.js
+│   ├── migrate.js
+│   └── analytics/        # Analytics extraction helpers
+│       └── cli.js
 └── tests/               # Test files
     ├── app.test.js
     └── ...
 ```
+
+---
+
+## 📊 Analytics Extraction (Local Testing)
+
+These scripts let you test “data extraction for analytics” even if you only have `users` + `triviaattempts` today.
+
+### 1) (Optional) Seed demo data into a *local* MongoDB
+
+This is useful if you don’t have real data yet.
+
+```bash
+MONGO_URI=mongodb://localhost:27017/dementia_database \
+    npm run analytics:seed-demo -- --days 14 --users 5 --attempts-per-day 50
+```
+
+By default it refuses to seed non-local databases. Use `--force` only if you really intend to write into a remote DB.
+
+### 2) Export safe raw trivia attempts (pseudonymized)
+
+Exports attempts without PII; `userId` is replaced with a salted HMAC.
+
+```bash
+ANALYTICS_SALT='change-me' \
+MONGO_URI='your-mongo-uri' \
+    npm run analytics:export-trivia -- \
+    --format ndjson \
+    --out ./exports/trivia_attempts.ndjson \
+    --since 2026-03-01 \
+    --limit 1000
+```
+
+### 3) Generate a daily topic rollup (prototype for `usertopicdaily`)
+
+```bash
+MONGO_URI='your-mongo-uri' \
+    npm run analytics:rollup-topic-daily -- \
+    --format csv \
+    --out ./exports/topic_daily.csv \
+    --since 2026-03-01 \
+    --until 2026-03-09
+```
+
+This produces per-day metrics grouped by `category` + `subDomain` (attempts, accuracy, avg time, unique users).
 
 ---
 

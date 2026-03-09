@@ -40,6 +40,10 @@ const { categories, categorizeArticle } = require("./config/categories");
 
 const app = express();
 
+// Trust the upstream proxy (Vercel/local reverse proxies) so req.ip and rate limiting
+// use the real client address (from X-Forwarded-For).
+app.set("trust proxy", true);
+
 // Security middleware
 const helmet = require('helmet');
 

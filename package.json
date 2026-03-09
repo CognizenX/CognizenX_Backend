@@ -6,7 +6,11 @@
     "test": "jest",
     "start": "node index.js",
     "build": "echo 'No build step needed'",
-    "vercel-build": "echo 'Nothing to build for backend'"
+    "vercel-build": "echo 'Nothing to build for backend'",
+    "analytics:help": "node scripts/analytics/cli.js --help",
+    "analytics:export-trivia": "node scripts/analytics/cli.js export-trivia",
+    "analytics:rollup-topic-daily": "node scripts/analytics/cli.js rollup-topic-daily",
+    "analytics:seed-demo": "node scripts/analytics/cli.js seed-demo"
   },
   "jest": {
     "setupFilesAfterEnv": [

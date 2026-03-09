@@ -1,15 +1,19 @@
-const rateLimit = require("express-rate-limit");
+const expressRateLimit = require("express-rate-limit");
+
+// v8 exports { rateLimit, ipKeyGenerator }. Keep compatibility with default export.
+const rateLimit = expressRateLimit.rateLimit || expressRateLimit;
+const { ipKeyGenerator } = expressRateLimit;
 
 // More lenient in development, reasonable in production
 const isDevelopment =
   process.env.NODE_ENV === "development" || process.env.NODE_ENV !== "production";
 
-// Behind Vercel (or any proxy), use X-Forwarded-For so rate limit is per client IP
-const keyGenerator = (req) => {
-  const forwarded = req.get("x-forwarded-for");
-  if (forwarded) {
-    return forwarded.split(",")[0].trim();
+// Use express-rate-limit's helper so IPv6 addresses are normalized safely.
+const keyGenerator = (req, res) => {
+  if (typeof ipKeyGenerator === "function") {
+    return ipKeyGenerator(req, res);
   }
+  // Fallback: shouldn't happen on v8, but keep safe behavior.
   return req.ip || req.socket?.remoteAddress || "unknown";
 };
 
