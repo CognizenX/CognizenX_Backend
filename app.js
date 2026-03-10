@@ -40,6 +40,10 @@ const { categories, categorizeArticle } = require("./config/categories");
 
 const app = express();
 
+// Trust the upstream proxy (Vercel/local reverse proxies) so req.ip and rate limiting
+// use the real client address (from X-Forwarded-For).
+app.set("trust proxy", true);
+
 // Security middleware
 const helmet = require('helmet');
 
@@ -96,12 +100,14 @@ const questionsRoutes = require("./routes/questions");
 const aiRoutes = require("./routes/ai");
 const usersRoutes = require("./routes/users");
 const activityRoutes = require("./routes/activity");
+const triviaRoutes = require("./routes/trivia");
 
 app.use("/api/auth", authRoutes);
 app.use("/api", questionsRoutes);
 app.use("/api", aiRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api", activityRoutes);
+app.use("/api/trivia", triviaRoutes);
 
 // Error handling middleware (must be last)
 app.use(errorHandler);
