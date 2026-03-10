@@ -1,4 +1,5 @@
 const rateLimit = require("express-rate-limit");
+const { ipKeyGenerator } = rateLimit;
 
 // More lenient in development, reasonable in production
 const isDevelopment =
@@ -7,10 +8,10 @@ const isDevelopment =
 // Behind Vercel (or any proxy), use X-Forwarded-For so rate limit is per client IP
 const keyGenerator = (req) => {
   const forwarded = req.get("x-forwarded-for");
-  if (forwarded) {
-    return forwarded.split(",")[0].trim();
-  }
-  return req.ip || req.socket?.remoteAddress || "unknown";
+  const clientIp = forwarded
+    ? forwarded.split(",")[0].trim()
+    : req.ip || req.socket?.remoteAddress;
+  return ipKeyGenerator(clientIp || "unknown");
 };
 
 /**
