@@ -72,9 +72,6 @@ async function generateQuestionsForCategory(category, domain, retries = 3) {
             } catch (explanationError) {
               lastExplanationError = explanationError;
               if (explanationAttempt < maxExplanationRetries) {
-                console.warn(
-                  `[GENERATOR] ⚠️  Explanation attempt ${explanationAttempt}/${maxExplanationRetries} failed for question ${index + 1}, retrying...`
-                );
                 await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1s before retry
               }
             }
@@ -82,11 +79,6 @@ async function generateQuestionsForCategory(category, domain, retries = 3) {
 
           // If all retries failed, skip this question
           if (!explanation) {
-            console.warn(
-              `[GENERATOR] ❌ Explanation generation failed after ${maxExplanationRetries} attempts for question ${index + 1} in ${category}/${domain}:`,
-              lastExplanationError?.message
-            );
-            console.warn(`[GENERATOR] Skipping this question (won't be saved)`);
             return null;
           }
 
@@ -96,19 +88,6 @@ async function generateQuestionsForCategory(category, domain, retries = 3) {
             explanation,
             explanationGeneratedAt: new Date(),
           };
-
-          // Log question immediately after it's generated
-          console.log(`\n[GENERATOR] Question ${index + 1}/${QUESTION_GENERATION_COUNT} for "${category}/${domain}":`);
-          console.log(`   ${questionObj.question}`);
-          if (questionObj.options && questionObj.options.length > 0) {
-            questionObj.options.forEach((opt, optIdx) => {
-              const isCorrect = opt === questionObj.correct_answer ? ' ✓' : '';
-              console.log(`   ${String.fromCharCode(65 + optIdx)}) ${opt}${isCorrect}`);
-            });
-          }
-          if (explanation) {
-            console.log(`${explanation}`);
-          }
 
           return questionWithExplanation;
         })
