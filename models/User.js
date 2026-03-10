@@ -1,9 +1,38 @@
 const mongoose = require("mongoose");
+const USER_CONSTRAINTS = require("../config/userConstraints");
 
 const UserSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
+
+    // Background Fields
+    // NOTE: These fields are required at the API layer (Joi signup validation),
+    // but are optional in the DB schema for backward compatibility with legacy users.
+    age: {
+        type: Number,
+        required: false,
+        min: USER_CONSTRAINTS.AGE_MIN,
+        max: USER_CONSTRAINTS.AGE_MAX,
+    },
+    gender: {
+        type: String,
+        required: false,
+        enum: USER_CONSTRAINTS.GENDER_VALUES,
+    },
+    countryOfOrigin: {
+        type: String,
+        required: false,
+        trim: true,
+        maxlength: USER_CONSTRAINTS.COUNTRY_MAX_LEN,
+    },
+    yearsOfEducation: {
+        type: Number,
+        required: false,
+        min: USER_CONSTRAINTS.EDU_YEARS_MIN,
+        max: USER_CONSTRAINTS.EDU_YEARS_MAX,
+    },
+
     // Session token fields
     sessionToken: { type: String, required: false },
     tokenExpiresAt: { type: Date, default: null },

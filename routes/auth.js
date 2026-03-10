@@ -52,7 +52,7 @@ router.get("/get-user-id", authMiddleware, async (req, res) => {
 });
 router.post("/signup", validate(signupSchema), async (req, res, next) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, age, gender, countryOfOrigin, yearsOfEducation } = req.body;
 
     console.log("Signup attempt for email:", email);
 
@@ -72,7 +72,13 @@ router.post("/signup", validate(signupSchema), async (req, res, next) => {
       email,
       password: hashedPassword,
       sessionToken,
-      tokenExpiresAt: expiresAt
+      tokenExpiresAt: expiresAt,
+
+      // Background fields
+      age,
+      gender,
+      countryOfOrigin,
+      yearsOfEducation,
     });
 
     // Save the user to database
@@ -123,16 +129,18 @@ router.post("/login", validate(loginSchema), async (req, res, next) => {
     const sessionToken = crypto.randomBytes(64).toString("hex");
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-    user.sessionToken = sessionToken;
-    user.tokenExpiresAt = expiresAt;
-    
-    // Save the token to database
+    // IMPORTANT: Use an atomic update instead of `user.save()`.
+    // `save()` runs full-document validation and can fail for legacy users
+    // that don't have newer background fields.
     try {
-      await user.save();
-      console.log("User saved with sessionToken:", email);
-    } catch (saveError) {
-      console.error("Error saving user sessionToken:", saveError);
-      throw saveError;
+      await User.updateOne(
+        { _id: user._id },
+        { $set: { sessionToken, tokenExpiresAt: expiresAt } }
+      );
+      console.log("User sessionToken updated:", email);
+    } catch (updateError) {
+      console.error("Error updating user sessionToken:", updateError);
+      throw updateError;
     }
 
     // Verify token was saved to database
