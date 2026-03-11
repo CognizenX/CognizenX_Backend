@@ -6,52 +6,48 @@
  */
 const categories = {
   entertainment: {
-    bollywood: {
-      movies: ['bollywood movies', 'film', 'cinema', 'director', 'actor', 'actress', 'screenplay'],
-      actors: ['bollywood actors', 'celebrity', 'star', 'actor', 'actress'],
-      songs: ['bollywood songs', 'music', 'singer', 'lyrics', 'album']
-    },
-    tollywood: ['tollywood', 'south indian film', 'telugu movie', 'tamil cinema'],
-    indianMusic: ['indian music', 'singer', 'composer', 'album', 'classical music', 'pop', 'instrumental'],
-    indianTVShows: ['tv show', 'indian television', 'soap opera', 'reality show'],
-    sports: {
-      cricket: ['cricket', 'bat', 'ball', 'wicket', 'batsman', 'bowler', 'tournament'],
-      otherSports: ['football', 'soccer', 'tennis', 'badminton', 'hockey', 'sports event']
-    }
+    'Bollywood Movies': ['bollywood movies', 'film', 'cinema', 'director', 'actor', 'actress', 'screenplay'],
+    'Bollywood Actors': ['bollywood actors', 'celebrity', 'star', 'actor', 'actress'],
+    'Bollywood Songs': ['bollywood songs', 'music', 'singer', 'lyrics', 'album'],
+    'Indian TV Shows': ['tv show', 'indian television', 'soap opera', 'reality show'],
   },
   politics: {
-    national: ['government', 'ministry', 'policy', 'cabinet', 'parliament', 'national law'],
-    northIndian: ['north india politics', 'state government', 'chief minister', 'legislature'],
-    southIndian: ['south india politics', 'andhra pradesh', 'karnataka', 'tamil nadu'],
-    freedomMovement: ['independence', 'freedom fighters', 'british rule', 'indian freedom movement']
+    'National': ['government', 'ministry', 'policy', 'cabinet', 'parliament', 'national law'],
+    'North Indian': ['north india politics', 'state government', 'chief minister', 'legislature'],
+    'South Indian': ['south india politics', 'andhra pradesh', 'karnataka', 'tamil nadu'],
   },
   history: {
-    ancientIndia: ['ancient india', 'vedic period', 'maurya empire', 'gupta dynasty', 'harappan'],
-    medievalIndia: ['medieval india', 'mughal empire', 'sultanate', 'rajput', 'maratha'],
-    modernIndia: ['modern india', 'british india', 'post-independence', 'partition', 'indian history']
+    'Ancient India': ['ancient india', 'vedic period', 'maurya empire', 'gupta dynasty', 'harappan'],
+    'Medieval India': ['medieval india', 'mughal empire', 'sultanate', 'rajput', 'maratha'],
+    'Modern India': ['modern india', 'british india', 'post-independence', 'partition', 'indian history'],
+    'Freedom Movement': ['independence', 'freedom fighters', 'british rule', 'indian freedom movement'],
   },
   geography: {
-    statesAndCapitals: ['state capital', 'indian states', 'capital city', 'map of india'],
-    riversAndMountains: ['rivers of india', 'mountains', 'himalayas', 'ganges', 'narmada'],
-    nationalParks: ['national park', 'wildlife sanctuary', 'forest reserve', 'nature park'],
-    librariesAndStatues: ['indian library', 'statue', 'monument', 'historical site']
+    'States and Capitals': ['state capital', 'indian states', 'capital city', 'map of india'],
+    'Rivers and Mountains': ['rivers of india', 'mountains', 'himalayas', 'ganges', 'narmada'],
+    'National Parks': ['national park', 'wildlife sanctuary', 'forest reserve', 'nature park'],
+    'Libraries and Statues': ['indian library', 'statue', 'monument', 'historical site'],
   },
   generalKnowledge: {
-    economy: ['indian economy', 'gdp', 'inflation', 'stock market', 'trade', 'finance'],
-    festivals: ['festival', 'celebration', 'diwali', 'holi', 'eid', 'indian tradition'],
-    literature: ['literature', 'books', 'author', 'poet', 'novel', 'indian writer'],
-    scienceAndTechnology: ['science', 'technology', 'innovation', 'research', 'engineering']
+    'Economy': ['indian economy', 'gdp', 'inflation', 'stock market', 'trade', 'finance'],
+    'Festivals': ['festival', 'celebration', 'diwali', 'holi', 'eid', 'indian tradition'],
+    'Literature': ['literature', 'books', 'author', 'poet', 'novel', 'indian writer'],
+    'Indian Literature': ['indian literature', 'indian author', 'indian poet', 'hindi literature', 'indian novel'],
+    'Science and Technology in India': ['science', 'technology', 'innovation', 'research', 'engineering'],
   },
   mythology: {
-    hindu: ['hindu mythology', 'god', 'goddess', 'epic', 'mahabharata', 'ramayana'],
-    otherReligions: ['buddhism', 'jainism', 'sikhism', 'christianity', 'islam', 'mythology']
+    'Hindu': ['hindu mythology', 'god', 'goddess', 'epic', 'mahabharata', 'ramayana'],
+    'Other Mythologies': ['buddhism', 'jainism', 'sikhism', 'christianity', 'islam', 'mythology'],
   },
-  currentAffairs: {
-    economicAffairs: ['economy', 'budget', 'policy', 'investment', 'indian market'],
-    infrastructure: ['infrastructure', 'development', 'roads', 'transportation', 'urban planning'],
-    internationalRelations: ['foreign policy', 'diplomacy', 'alliance', 'india-un relations'],
-    healthAndEnvironment: ['health', 'environment', 'climate change', 'pollution', 'conservation']
-  }
+  sports: {
+    'Cricket': ['cricket', 'bat', 'ball', 'wicket', 'batsman', 'bowler', 'tournament'],
+  },
+  'current affairs': {
+    'Economic Affairs': ['economy', 'budget', 'policy', 'investment', 'indian market'],
+    'Infrastructure': ['infrastructure', 'development', 'roads', 'transportation', 'urban planning'],
+    'International Relations': ['foreign policy', 'diplomacy', 'alliance', 'india-un relations'],
+    'Health and Environment': ['health', 'environment', 'climate change', 'pollution', 'conservation'],
+  },
 };
 
 /**

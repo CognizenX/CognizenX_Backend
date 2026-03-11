@@ -24,7 +24,7 @@ describe("POST /api/log-activity", () => {
       .set("Authorization", `Bearer ${token}`)
       .send({
         category: "history",
-        domain: "modernIndia"
+        domain: "Modern India"
       });
 
     expect(res.statusCode).toBe(200);
@@ -34,7 +34,7 @@ describe("POST /api/log-activity", () => {
     expect(activity).toBeDefined();
     expect(activity.categories.length).toBe(1);
     expect(activity.categories[0].category).toBe("history");
-    expect(activity.categories[0].domain).toBe("modernIndia");
+    expect(activity.categories[0].domain).toBe("Modern India");
     expect(activity.categories[0].count).toBe(1);
   });
 
@@ -44,7 +44,7 @@ describe("POST /api/log-activity", () => {
       userId,
       categories: [{
         category: "politics",
-        domain: "northIndian",
+        domain: "North Indian",
         count: 1
       }]
     });
@@ -54,7 +54,7 @@ describe("POST /api/log-activity", () => {
       .set("Authorization", `Bearer ${token}`)
       .send({
         category: "politics",
-        domain: "northIndian"
+        domain: "North Indian"
       });
 
     expect(res.statusCode).toBe(200);
@@ -77,7 +77,7 @@ describe("POST /api/log-activity", () => {
   it("should return 401 if no token is provided", async () => {
     const res = await request(app)
       .post("/api/log-activity")
-      .send({ category: "history", domain: "ancientIndia" });
+      .send({ category: "history", domain: "Ancient India" });
 
     expect(res.statusCode).toBe(401);
   });
