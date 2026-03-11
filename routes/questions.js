@@ -87,7 +87,7 @@ router.get("/questions", async (req, res, next) => {
 
 // GET /api/random-questions - Get random questions from pre-generated bank
 router.get("/random-questions", async (req, res, next) => {
-  const { categories, subDomain, useSaved = 'true' } = req.query;
+  const { categories, subDomain } = req.query;
 
   if (!categories) {
     return res.status(400).json({ message: 'Categories are required.' });
