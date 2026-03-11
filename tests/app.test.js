@@ -25,7 +25,7 @@ describe("POST /api/add-questions", () => {
     it("should add new questions and return success response", async () => {
       const payload = {
         category: "history",
-        domain: "modernIndia",
+        domain: "Modern India",
         questions: [
           {
             question: "When did India gain independence?",

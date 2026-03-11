@@ -10,7 +10,7 @@ require('dotenv').config();
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:6000';
 const TEST_CATEGORY = 'history';
-const TEST_SUBDOMAIN = 'ancientIndia';
+const TEST_SUBDOMAIN = 'Ancient India';
 
 // Colors for console output
 const colors = {

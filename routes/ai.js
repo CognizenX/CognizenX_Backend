@@ -15,13 +15,41 @@ router.post("/generate-questions", authMiddleware, async (req, res, next) => {
     }
     
     const questions = await generateQuestions(category, subDomain, count);
+
+    const questionsWithExplanations = await Promise.all(
+      questions.map(async (questionObj) => {
+        try {
+          const explanation = await generateExplanation(
+            questionObj.question,
+            questionObj.correct_answer,
+            questionObj.correct_answer
+          );
+
+          return {
+            ...questionObj,
+            explanation,
+            explanationGeneratedAt: new Date(),
+          };
+        } catch (explanationError) {
+          console.warn(
+            `Failed to generate explanation for question: "${(questionObj.question || '').substring(0, 60)}..."`,
+            explanationError.message
+          );
+
+          return {
+            ...questionObj,
+            explanation: '',
+          };
+        }
+      })
+    );
     
     let triviaCategory = await TriviaCategory.findOne({ category, domain: subDomain });
     if (!triviaCategory) {
       triviaCategory = new TriviaCategory({ category, domain: subDomain, questions: [] });
     }
     
-    const formattedQuestions = formatQuestions(questions, {
+    const formattedQuestions = formatQuestions(questionsWithExplanations, {
       category,
       subDomain,
       aiGenerated: true,
