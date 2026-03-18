@@ -4,6 +4,7 @@
 
 function formatQuestion(raw, { category, subDomain, aiGenerated = false } = {}) {
   const correctAnswer = (raw.correct_answer || raw.correctAnswer || '').trim();
+  const explanation = (raw.explanation || '').trim();
 
   return {
     question: (raw.question || '').trim(),
@@ -14,6 +15,8 @@ function formatQuestion(raw, { category, subDomain, aiGenerated = false } = {}) 
     // Backward compatibility: support both field names
     correctAnswer: correctAnswer,
     subDomain: subDomain || raw.subDomain || '',
+    explanation,
+    ...(explanation ? { explanationGeneratedAt: raw.explanationGeneratedAt || new Date() } : {}),
     ...(category ? { category } : {}),
     aiGenerated,
     createdAt: raw.createdAt || new Date(),

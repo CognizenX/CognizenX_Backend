@@ -15,6 +15,12 @@
         "src": "/api/(.*)",
         "dest": "index.js"
       }
+    ],
+    "crons": [
+      {
+        "path": "/api/internal/generate-weekly-questions",
+        "schedule": "0 2 * * 0"
+      }
     ]
   }
   
