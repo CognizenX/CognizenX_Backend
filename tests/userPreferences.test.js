@@ -24,8 +24,8 @@ describe("GET /api/user-preferences", () => {
     await UserActivity.create({
       userId: userId,
       categories: [
-        { category: "history", domain: "modernIndia", count: 5 },
-        { category: "geography", domain: "riversAndMountains", count: 3 },
+        { category: "history", domain: "Modern India", count: 5 },
+        { category: "geography", domain: "Rivers and Mountains", count: 3 },
         { category: "mythology", domain: "hindu", count: 7 }
       ]
     });

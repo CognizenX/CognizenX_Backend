@@ -7,7 +7,7 @@ describe("GET /api/questions", () => {
     // Insert a category with questions
     await Trivia.create({
       category: "history",
-      domain: "modernIndia",
+      domain: "Modern India",
       questions: [
         {
           question: "Who was the first President of India?",
@@ -26,7 +26,7 @@ describe("GET /api/questions", () => {
   it("should return questions for valid category and subDomain", async () => {
     const res = await request(app)
       .get("/api/questions")
-      .query({ category: "history", subDomain: "modernIndia" });
+      .query({ category: "history", subDomain: "Modern India" });
 
     expect(res.statusCode).toBe(200);
     expect(res.body.status).toBe("success");
