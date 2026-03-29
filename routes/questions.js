@@ -164,9 +164,9 @@ router.get("/random-questions", async (req, res, next) => {
   }
 });
 
-// POST /api/internal/generate-weekly-questions - Protected endpoint for Vercel Cron
-// This endpoint is called weekly by Vercel Cron to automatically generate questions
-router.post("/internal/generate-weekly-questions", async (req, res, next) => {
+// GET/POST /api/internal/generate-weekly-questions - Protected endpoint for Vercel Cron
+// Vercel Cron triggers this endpoint with GET. POST is also supported for manual testing.
+const handleWeeklyGeneration = async (req, res, next) => {
   try {
     // Authentication - Check Bearer token
     const authHeader = req.headers.authorization;
@@ -308,6 +308,9 @@ router.post("/internal/generate-weekly-questions", async (req, res, next) => {
       timestamp: new Date().toISOString()
     });
   }
-});
+};
+
+router.get("/internal/generate-weekly-questions", handleWeeklyGeneration);
+router.post("/internal/generate-weekly-questions", handleWeeklyGeneration);
 
 module.exports = router;
