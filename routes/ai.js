@@ -1,6 +1,6 @@
 const express = require("express");
 const TriviaCategory = require("../models/TriviaCategory");
-const { formatQuestions, deduplicateAgainst, normaliseForResponse } = require("../utils/questionFormatter");
+const { formatQuestions, deduplicateAgainst } = require("../utils/questionFormatter");
 const { generateQuestions, generateExplanation } = require("../services/openaiService");
 const authMiddleware = require("../middleware/auth");
 
@@ -16,7 +16,7 @@ router.post("/generate-questions", authMiddleware, async (req, res, next) => {
     
     const questions = await generateQuestions(category, subDomain, count);
     
-    let triviaCategory = await TriviaCategory.findOne({ category, domain: subDomain });
+    let triviaCategory = await TriviaCategory.findOne({ category, subDomain });
     if (!triviaCategory) {
       triviaCategory = new TriviaCategory({ category, domain: subDomain, questions: [] });
     }
@@ -66,7 +66,7 @@ router.post("/generate-explanation", authMiddleware, async (req, res, next) => {
     // Try to find cached explanation if questionId, category, and subDomain are provided
     let explanation = null;
     if (questionId && category && subDomain) {
-      const triviaCategory = await TriviaCategory.findOne({ category, domain: subDomain });
+      const triviaCategory = await TriviaCategory.findOne({ category, subDomain });
       if (triviaCategory) {
         console.log('Found trivia category, looking for question:', questionId);
         const questionObj = triviaCategory.questions.id(questionId);
@@ -96,7 +96,7 @@ router.post("/generate-explanation", authMiddleware, async (req, res, next) => {
     // Save explanation to database if questionId, category, and subDomain are provided
     if (questionId && category && subDomain && explanation) {
       console.log('Attempting to save explanation to database...');
-      const triviaCategory = await TriviaCategory.findOne({ category, domain: subDomain });
+      const triviaCategory = await TriviaCategory.findOne({ category, subDomain });
       if (triviaCategory) {
         const questionObj = triviaCategory.questions.id(questionId);
         if (questionObj) {
