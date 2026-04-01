@@ -6,6 +6,28 @@ const User = require("../models/User");
 require("./setup");
 
 describe("/api/users/me profile update", () => {
+  test("GET /api/users/me returns current user", async () => {
+    const sessionToken = "profile-token-me";
+
+    await User.create({
+      name: "Me User",
+      email: "me-user@example.com",
+      password: "hashed",
+      sessionToken,
+      tokenExpiresAt: null,
+    });
+
+    const res = await request(app)
+      .get("/api/users/me")
+      .set("Authorization", `Bearer ${sessionToken}`)
+      .expect(200);
+
+    expect(res.body).toHaveProperty("user");
+    expect(res.body.user).toHaveProperty("email", "me-user@example.com");
+    expect(res.body.user).toHaveProperty("name", "Me User");
+    expect(res.body.user).toHaveProperty("id");
+  });
+
   test("legacy user can set dob+gender once and edit other fields", async () => {
     const sessionToken = "profile-token-1";
 
