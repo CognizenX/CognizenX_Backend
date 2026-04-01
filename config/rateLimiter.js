@@ -9,16 +9,15 @@ const isDevelopment =
   process.env.NODE_ENV === "development" || process.env.NODE_ENV !== "production";
 
 // Behind Vercel (or any proxy), use X-Forwarded-For so rate limit is per client IP
-const keyGenerator = (req, res) => {
+const keyGenerator = (req) => {
   const forwarded = req.get("x-forwarded-for");
   const clientIp = forwarded
     ? forwarded.split(",")[0].trim()
     : req.ip || req.socket?.remoteAddress || "unknown";
 
-  if (typeof ipKeyGenerator === "function") {
+    if (typeof ipKeyGenerator === "function") {
     return ipKeyGenerator(req, res);
   }
-
   return clientIp;
 };
 
