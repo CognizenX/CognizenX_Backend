@@ -46,7 +46,7 @@ router.post("/generate-questions", authMiddleware, async (req, res, next) => {
     
     let triviaCategory = await TriviaCategory.findOne({ category, subDomain });
     if (!triviaCategory) {
-      triviaCategory = new TriviaCategory({ category, domain: subDomain, questions: [] });
+      triviaCategory = new TriviaCategory({ category, subDomain, questions: [] });
     }
     
     const formattedQuestions = formatQuestions(questionsWithExplanations, {
