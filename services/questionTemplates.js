@@ -1,7 +1,7 @@
 // Question templates for better context and relevance
 const questionTemplates = {
   politics: {
-    national: {
+    'National': {
       topics: [
         "Indian Constitution and Fundamental Rights",
         "Parliament and Government Structure", 
@@ -18,7 +18,7 @@ const questionTemplates = {
         "What is the maximum strength of the Lok Sabha?"
       ]
     },
-    northIndian: {
+    'North Indian': {
       topics: [
         "North Indian State Politics",
         "Delhi Government and Assembly",
@@ -30,7 +30,7 @@ const questionTemplates = {
   },
   
   geography: {
-    statesAndCapitals: {
+    'States and Capitals': {
       topics: [
         "Indian States and Union Territories",
         "State Capitals and Major Cities",
@@ -38,27 +38,37 @@ const questionTemplates = {
         "State Borders and Neighboring States"
       ]
     },
-    northIndian: {
+    'Rivers and Mountains': {
       topics: [
-        "North Indian States (UP, Punjab, Haryana, Delhi)",
-        "Himalayan States (Himachal, Uttarakhand, J&K)",
-        "North Indian Rivers (Ganga, Yamuna, Beas)",
-        "North Indian Plains and Agriculture"
+        "Major Rivers of India (Ganga, Yamuna, Brahmaputra)",
+        "Himalayan Mountain Range",
+        "Western and Eastern Ghats",
+        "River Systems and Tributaries"
       ]
     }
   },
   
   entertainment: {
-    bollywood: {
+    'Bollywood Movies': {
       topics: [
         "Classic Bollywood Movies (1950s-1990s)",
         "Famous Bollywood Actors and Actresses",
-        "Bollywood Music and Songs",
         "Bollywood Directors and Producers",
         "Bollywood Awards and Recognition"
       ]
     },
-    cricket: {
+    'Bollywood Songs': {
+      topics: [
+        "Bollywood Music and Songs",
+        "Famous Playback Singers",
+        "Bollywood Music Composers",
+        "Iconic Bollywood Soundtracks"
+      ]
+    },
+  },
+
+  sports: {
+    'Cricket': {
       topics: [
         "International Cricket Players (all countries)",
         "ICC World Cup tournaments",
@@ -76,18 +86,10 @@ const questionTemplates = {
         "Which bowler has taken the most wickets in Test cricket?"
       ]
     },
-    sports: {
-      topics: [
-        "International Sports Events",
-        "Olympic Games",
-        "World Championships",
-        "International Sports Records"
-      ]
-    }
   },
   
   history: {
-    ancientIndia: {
+    'Ancient India': {
       topics: [
         "Indus Valley Civilization",
         "Vedic Period and Literature",
@@ -96,7 +98,7 @@ const questionTemplates = {
         "Ancient Indian Universities"
       ]
     },
-    modernIndia: {
+    'Modern India': {
       topics: [
         "Indian Independence Movement",
         "Freedom Fighters and Leaders",
