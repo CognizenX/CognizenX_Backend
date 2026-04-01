@@ -24,7 +24,7 @@ describe("Trivia attempts + daily metrics", () => {
 
     const trivia = await TriviaCategory.create({
       category: "history",
-      subDomain: "Modern India",
+      domain: "Modern India",
       questions: [
         {
           question: "Who was the first Prime Minister of India?",

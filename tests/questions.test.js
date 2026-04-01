@@ -7,7 +7,7 @@ describe("GET /api/questions", () => {
     // Insert a category with questions
     await Trivia.create({
       category: "history",
-      subDomain: "Modern India",
+      domain: "Modern India",
       questions: [
         {
           question: "Who was the first President of India?",
@@ -39,7 +39,7 @@ describe("GET /api/questions", () => {
   it("should return 404 if category exists but has no questions", async () => {
     await Trivia.create({
       category: "science",
-      subDomain: "space",
+      domain: "space",
       questions: []
     });
 
