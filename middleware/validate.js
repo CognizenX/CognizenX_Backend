@@ -20,11 +20,14 @@ const signupSchema = Joi.object({
   name: Joi.string().min(2).max(50).pattern(/^[a-zA-Z\s]+$/).required(),
   email: Joi.string().email().max(100).required(),
   password: Joi.string().min(6).max(128).required(),
-  age: Joi.number().integer().min(USER_CONSTRAINTS.AGE_MIN).max(USER_CONSTRAINTS.AGE_MAX).required(),
+  // Backward compatible: older clients send `age`, newer clients send `dob`.
+  // Prefer `dob` (date of birth) so age can be derived accurately over time.
+  dob: Joi.string().trim().pattern(/^\d{4}-\d{2}-\d{2}$/),
+  age: Joi.number().integer().min(USER_CONSTRAINTS.AGE_MIN).max(USER_CONSTRAINTS.AGE_MAX),
   gender: Joi.string().valid(...USER_CONSTRAINTS.GENDER_VALUES).required(),
   countryOfOrigin: Joi.string().max(USER_CONSTRAINTS.COUNTRY_MAX_LEN).required(),
   yearsOfEducation: Joi.number().integer().min(USER_CONSTRAINTS.EDU_YEARS_MIN).max(USER_CONSTRAINTS.EDU_YEARS_MAX).required(),
-});
+}).or("dob", "age");
 
 const loginSchema = Joi.object({
   email: Joi.string().email().max(100).required(),

@@ -2,7 +2,6 @@ const express = require("express");
 const TriviaCategory = require("../models/TriviaCategory");
 const {
   formatQuestion,
-  formatQuestions,
   deduplicateAgainst,
   normaliseForResponse,
 } = require("../utils/questionFormatter");
@@ -19,15 +18,17 @@ const router = express.Router();
 router.post("/add-questions", async (req, res, next) => {
   console.log(req.body);
 
-  const { category, domain, questions } = req.body;
+  // Accept subDomain (preferred) or the legacy domain field
+  const subDomain = req.body.subDomain || req.body.domain;
+  const { category, questions } = req.body;
 
   try {
-    let triviaCategory = await TriviaCategory.findOne({ category, domain });
+    let triviaCategory = await TriviaCategory.findOne({ category, subDomain });
 
     if (!triviaCategory) {
       triviaCategory = new TriviaCategory({
         category,
-        domain,
+        subDomain,
         questions: [],
       });
     }
@@ -39,7 +40,7 @@ router.post("/add-questions", async (req, res, next) => {
       '/api/add-questions'
     );
     triviaCategory.questions.push(...unique);
-    
+
     console.log(`Added ${addedCount} new questions, skipped ${duplicateCount} duplicates`);
 
     await triviaCategory.save();
@@ -66,7 +67,7 @@ router.get("/questions", async (req, res, next) => {
     });
   }
   try {
-    const triviaCategory = await TriviaCategory.findOne({ category, domain: subDomain });
+    const triviaCategory = await TriviaCategory.findOne({ category, subDomain });
 
     if (!triviaCategory || !triviaCategory.questions.length) {
       return res.status(404).json({
@@ -85,7 +86,7 @@ router.get("/questions", async (req, res, next) => {
   }
 });
 
-// GET /api/random-questions - Get random questions from pre-generated bank
+// GET /api/random-questions - Get random questions from the saved bank
 router.get("/random-questions", async (req, res, next) => {
   const { categories, subDomain } = req.query;
 
@@ -100,31 +101,26 @@ router.get("/random-questions", async (req, res, next) => {
     
     // For each category, get saved questions from the bank
     for (const category of categoryList) {
-      // Determine the domain/subDomain to use
-      const domainToUse = subDomain || category;
-      
-      // Try to get saved questions from the bank
-      const query = subDomain 
-        ? { category, domain: subDomain }
+      const query = subDomain
+        ? { category, subDomain }
         : { category };
-      
+
       let triviaCategory = await TriviaCategory.findOne(query);
-      
-      // If no questions exist for this category/subDomain, try to find any questions for the category
+
+      // Fall back to any document for this category if the specific subDomain has no questions
       if (!triviaCategory || triviaCategory.questions.length === 0) {
         const anyCategoryQuestions = await TriviaCategory.findOne({ category });
         if (anyCategoryQuestions && anyCategoryQuestions.questions.length > 0) {
           triviaCategory = anyCategoryQuestions;
         }
       }
-      
-      // Collect saved questions
+
       if (triviaCategory && triviaCategory.questions.length > 0) {
         let categorySavedQuestions = [];
         if (subDomain) {
           categorySavedQuestions = triviaCategory.questions.filter(q => {
-            const questionSubDomain = q.subDomain || triviaCategory.domain;
-            return questionSubDomain === subDomain || triviaCategory.domain === subDomain;
+            const questionSubDomain = q.subDomain || triviaCategory.subDomain;
+            return questionSubDomain === subDomain || triviaCategory.subDomain === subDomain;
           });
         } else {
           categorySavedQuestions = triviaCategory.questions;
@@ -138,25 +134,29 @@ router.get("/random-questions", async (req, res, next) => {
       return res.status(200).json({
         questions: [],
         totalAvailable: 0,
-        message: subDomain 
-          ? `No questions available for ${categoryList.join(', ')} / ${subDomain}. Please wait for weekly generation.`
-          : 'No questions available for the selected categories. Please wait for weekly generation.'
+        generated: 0,
+        message: subDomain
+          ? `No questions available for ${categoryList.join(', ')} / ${subDomain}.`
+          : 'No questions available for the selected categories.'
       });
     }
     
     // Randomly select 10 questions from the bank
-    const shuffledQuestions = savedQuestions.sort(() => Math.random() - 0.5).slice(0, 10);
+    const finalQuestions = savedQuestions.sort(() => Math.random() - 0.5).slice(0, 10);
     
     // Ensure backward compatibility for existing questions
-    const compatibleQuestions = shuffledQuestions.map(normaliseForResponse);
-    
+    const compatibleQuestions = finalQuestions.map(normaliseForResponse);
+
     // Note: Activity logging is handled by frontend calling POST /api/log-activity
-    console.log(`Served ${shuffledQuestions.length} questions from bank for categories: ${categoryList.join(', ')}`);
+    console.log(
+      `Served ${compatibleQuestions.length} questions from bank for categories: ${categoryList.join(', ')}`
+    );
     
     res.json({ 
       questions: compatibleQuestions,
-      totalAvailable: shuffledQuestions.length,
-      source: 'bank'
+      totalAvailable: savedQuestions.length,
+      generated: 0,
+      source: 'bank',
     });
   } catch (error) {
     console.error('Error fetching random questions:', error);

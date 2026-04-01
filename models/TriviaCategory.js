@@ -62,25 +62,31 @@ const QuestionSchema = new mongoose.Schema({
 
 // Define the schema for trivia categories and associated questions
 const TriviaCategorySchema = new mongoose.Schema({
-  category: { 
-    type: String, 
+  category: {
+    type: String,
     required: true,
     trim: true,
   },
-  domain: { 
-    type: String, 
+  subDomain: {
+    type: String,
     required: true,
     trim: true,
   },
   questions: [QuestionSchema], // Array of questions under each category
-  createdAt: { 
-    type: Date, 
-    default: Date.now, 
+  // Count of distinct questions that have been answered at least once by any user.
+  // Used to compute the seen ratio and trigger the question scheduler.
+  seen: {
+    type: Number,
+    default: 0,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
   },
 });
 
-// Ensure fast lookups by indexing category, domain, and subdomain
-TriviaCategorySchema.index({ category: 1, domain: 1 }, { unique: true });
+// Ensure fast lookups by indexing category and subDomain
+TriviaCategorySchema.index({ category: 1, subDomain: 1 }, { unique: true });
 
 const TriviaCategory = mongoose.model("TriviaCategory", TriviaCategorySchema);
 

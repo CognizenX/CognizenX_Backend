@@ -9,6 +9,11 @@ const UserSchema = new mongoose.Schema({
     // Background Fields
     // NOTE: These fields are required at the API layer (Joi signup validation),
     // but are optional in the DB schema for backward compatibility with legacy users.
+    // `age` is kept for legacy users; new flows should use `dob`.
+    dob: {
+        type: Date,
+        required: false,
+    },
     age: {
         type: Number,
         required: false,
