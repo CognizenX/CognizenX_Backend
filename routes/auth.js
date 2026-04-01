@@ -52,7 +52,7 @@ router.get("/get-user-id", authMiddleware, async (req, res) => {
 });
 router.post("/signup", validate(signupSchema), async (req, res, next) => {
   try {
-    const { name, email, password, age, gender, countryOfOrigin, yearsOfEducation } = req.body;
+    const { name, email, password, dob, age, gender, countryOfOrigin, yearsOfEducation } = req.body;
 
     console.log("Signup attempt for email:", email);
 
@@ -67,6 +67,21 @@ router.post("/signup", validate(signupSchema), async (req, res, next) => {
     const sessionToken = crypto.randomBytes(64).toString("hex");
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
+    let dobDate = undefined;
+    if (dob) {
+      const s = String(dob).trim();
+      const parsed = /^\d{4}-\d{2}-\d{2}$/.test(s) ? new Date(`${s}T00:00:00.000Z`) : new Date(s);
+      if (Number.isNaN(parsed.getTime())) {
+        return res.status(400).json({ message: "Invalid date of birth. Use YYYY-MM-DD." });
+      }
+      const now = new Date();
+      const todayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      if (parsed.getTime() > todayUtc.getTime()) {
+        return res.status(400).json({ message: "Date of birth cannot be in the future." });
+      }
+      dobDate = parsed;
+    }
+
     const newUser = new User({
       name,
       email,
@@ -75,7 +90,8 @@ router.post("/signup", validate(signupSchema), async (req, res, next) => {
       tokenExpiresAt: expiresAt,
 
       // Background fields
-      age,
+      dob: dobDate,
+      age: dobDate ? undefined : age,
       gender,
       countryOfOrigin,
       yearsOfEducation,
