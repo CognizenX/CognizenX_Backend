@@ -178,9 +178,12 @@ router.patch("/me", authMiddleware, validate(updateMeSchema), async (req, res, n
 });
 
 // GET /api/users/:id - Fetch specific user with activities
-// Only match Mongo ObjectId-like ids so routes like /me don't get captured.
-router.get("/:id([0-9a-fA-F]{24})", async (req, res, next) => {
+router.get("/:id", async (req, res, next) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid user id." });
+    }
+
     const user = await User.findById(req.params.id);
     if (!user) {
       return res.status(404).json({ message: "User not found." });
