@@ -1,19 +1,23 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-/**
- * SchedulerMetadata Model
- * 
- * PURPOSE:
- * Tracks the scheduler's execution history - how many times it has run, and what the current "week number" is.
- * 
- */
 const SchedulerMetadataSchema = new mongoose.Schema({
-  // Week counter
-  // Week 1-2: bootstrap phase
-  // Week 3+: dynamic/tier-based phase
+  // ISO week number (1–53) of the year the scheduler ran
   weekNumber: {
     type: Number,
     default: 0,
+    index: true,
+  },
+
+  category: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+
+  subDomain: {
+    type: String,
+    required: true,
+    trim: true,
   },
 
   lastRunAt: {
@@ -21,22 +25,20 @@ const SchedulerMetadataSchema = new mongoose.Schema({
     default: null,
   },
 
-  // Total questions generated across all runs 
+    // Total questions generated across all runs 
   totalQuestionsGenerated: {
     type: Number,
     default: 0,
   },
 
-  // Created timestamp
+ // Created timestamp
   createdAt: {
     type: Date,
     default: Date.now,
   },
 });
 
-// Ensure only ONE metadata document exists
-SchedulerMetadataSchema.index({ _id: 1 }, { unique: true });
+// One scheduler record per category+subDomain per week
+SchedulerMetadataSchema.index({ category: 1, subDomain: 1, weekNumber: 1 }, { unique: true });
 
-const SchedulerMetadata = mongoose.model("SchedulerMetadata", SchedulerMetadataSchema);
-
-module.exports = SchedulerMetadata;
+module.exports = mongoose.model("SchedulerMetadata", SchedulerMetadataSchema);

@@ -1,5 +1,8 @@
-const rateLimit = require("express-rate-limit");
-const { ipKeyGenerator } = rateLimit;
+const expressRateLimit = require("express-rate-limit");
+
+// v8 exports { rateLimit, ipKeyGenerator }. Keep compatibility with default export.
+const rateLimit = expressRateLimit.rateLimit || expressRateLimit;
+const { ipKeyGenerator } = expressRateLimit;
 
 // More lenient in development, reasonable in production
 const isDevelopment =
@@ -10,8 +13,12 @@ const keyGenerator = (req) => {
   const forwarded = req.get("x-forwarded-for");
   const clientIp = forwarded
     ? forwarded.split(",")[0].trim()
-    : req.ip || req.socket?.remoteAddress;
-  return ipKeyGenerator(clientIp || "unknown");
+    : req.ip || req.socket?.remoteAddress || "unknown";
+
+    if (typeof ipKeyGenerator === "function") {
+    return ipKeyGenerator(req, res);
+  }
+  return clientIp;
 };
 
 /**

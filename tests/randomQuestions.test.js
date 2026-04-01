@@ -8,7 +8,7 @@ describe("GET /api/random-questions", () => {
     await Trivia.insertMany([
       {
         category: "history",
-        domain: "Ancient India",
+        subDomain: "Ancient India",
         questions: [
           {
             question: "Who founded the Maurya Empire?",
@@ -24,7 +24,7 @@ describe("GET /api/random-questions", () => {
       },
       {
         category: "politics",
-        domain: "North Indian",
+        subDomain: "North Indian",
         questions: [
           {
             question: "Who is the current PM of India?",
