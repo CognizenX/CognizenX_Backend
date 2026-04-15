@@ -8,6 +8,12 @@ const {
 const { generateQuestions } = require("../services/openaiService");
 const { runWeeklyGeneration, QUESTION_GENERATION_COUNT } = require("../services/questionScheduler");
 const { categories } = require("../config/categories");
+const {
+  normaliseTaxonomyInput,
+  buildCategoryOnlyQuery,
+  buildCategorySubDomainQuery,
+  normaliseSubDomain,
+} = require("../utils/taxonomy");
 
 // Get email service for notifications
 const { sendCronAlert } = require("../services/mailer");
@@ -18,12 +24,13 @@ const router = express.Router();
 router.post("/add-questions", async (req, res, next) => {
   console.log(req.body);
 
-  // Accept subDomain (preferred) or the legacy domain field
-  const subDomain = req.body.subDomain || req.body.domain;
-  const { category, questions } = req.body;
+  const { category, subDomain } = normaliseTaxonomyInput(req.body);
+  const { questions } = req.body;
 
   try {
-    let triviaCategory = await TriviaCategory.findOne({ category, subDomain });
+    let triviaCategory = await TriviaCategory.findOne(
+      buildCategorySubDomainQuery(category, subDomain)
+    );
 
     if (!triviaCategory) {
       triviaCategory = new TriviaCategory({
@@ -33,7 +40,9 @@ router.post("/add-questions", async (req, res, next) => {
       });
     }
 
-    const formatted = questions.map(q => formatQuestion(q, { subDomain: q.subDomain }));
+    const formatted = questions.map((q) =>
+      formatQuestion(q, { subDomain: normaliseSubDomain(q.subDomain || subDomain, category) })
+    );
     const { unique, addedCount, duplicateCount } = deduplicateAgainst(
       formatted,
       triviaCategory.questions,
@@ -58,7 +67,7 @@ router.post("/add-questions", async (req, res, next) => {
 
 // GET /api/questions - Fetch questions by category and subDomain
 router.get("/questions", async (req, res, next) => {
-  const { category, subDomain } = req.query;
+  const { category, subDomain } = normaliseTaxonomyInput(req.query);
 
   if (!category || !subDomain) {
     return res.status(400).json({
@@ -67,7 +76,9 @@ router.get("/questions", async (req, res, next) => {
     });
   }
   try {
-    const triviaCategory = await TriviaCategory.findOne({ category, subDomain });
+    const triviaCategory = await TriviaCategory.findOne(
+      buildCategorySubDomainQuery(category, subDomain)
+    );
 
     if (!triviaCategory || !triviaCategory.questions.length) {
       return res.status(404).json({
@@ -88,13 +99,17 @@ router.get("/questions", async (req, res, next) => {
 
 // GET /api/random-questions - Get random questions from the saved bank
 router.get("/random-questions", async (req, res, next) => {
-  const { categories, subDomain } = req.query;
+  const { categories } = req.query;
+  const { subDomain } = normaliseTaxonomyInput(req.query);
 
   if (!categories) {
     return res.status(400).json({ message: 'Categories are required.' });
   }
 
-  const categoryList = categories.split(',');
+  const categoryList = categories
+    .split(',')
+    .map((entry) => normaliseTaxonomyInput({ category: entry }).category)
+    .filter(Boolean);
 
   try {
     let savedQuestions = [];
@@ -102,14 +117,14 @@ router.get("/random-questions", async (req, res, next) => {
     // For each category, get saved questions from the bank
     for (const category of categoryList) {
       const query = subDomain
-        ? { category, subDomain }
-        : { category };
+        ? buildCategorySubDomainQuery(category, subDomain)
+        : buildCategoryOnlyQuery(category);
 
       let triviaCategory = await TriviaCategory.findOne(query);
 
       // Fall back to any document for this category if the specific subDomain has no questions
       if (!triviaCategory || triviaCategory.questions.length === 0) {
-        const anyCategoryQuestions = await TriviaCategory.findOne({ category });
+        const anyCategoryQuestions = await TriviaCategory.findOne(buildCategoryOnlyQuery(category));
         if (anyCategoryQuestions && anyCategoryQuestions.questions.length > 0) {
           triviaCategory = anyCategoryQuestions;
         }
@@ -118,9 +133,10 @@ router.get("/random-questions", async (req, res, next) => {
       if (triviaCategory && triviaCategory.questions.length > 0) {
         let categorySavedQuestions = [];
         if (subDomain) {
-          categorySavedQuestions = triviaCategory.questions.filter(q => {
-            const questionSubDomain = q.subDomain || triviaCategory.subDomain;
-            return questionSubDomain === subDomain || triviaCategory.subDomain === subDomain;
+          categorySavedQuestions = triviaCategory.questions.filter((q) => {
+            const questionSubDomain = normaliseSubDomain(q.subDomain || triviaCategory.subDomain, category);
+            const categorySubDomain = normaliseSubDomain(triviaCategory.subDomain, category);
+            return questionSubDomain === subDomain || categorySubDomain === subDomain;
           });
         } else {
           categorySavedQuestions = triviaCategory.questions;

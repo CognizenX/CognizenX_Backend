@@ -2,6 +2,7 @@ const express = require("express");
 const TriviaCategory = require("../models/TriviaCategory");
 const { formatQuestions, deduplicateAgainst } = require("../utils/questionFormatter");
 const { generateQuestions, generateExplanation } = require("../services/openaiService");
+const { normaliseTaxonomyInput, buildCategorySubDomainQuery } = require("../utils/taxonomy");
 const authMiddleware = require("../middleware/auth");
 
 const router = express.Router();
@@ -9,7 +10,8 @@ const router = express.Router();
 // POST /api/generate-questions - Generate questions via OpenAI
 router.post("/generate-questions", authMiddleware, async (req, res, next) => {
   try {
-    const { category, subDomain, count = 10 } = req.body;
+    const { category, subDomain } = normaliseTaxonomyInput(req.body);
+    const count = Number(req.body.count || 10);
     if (!category) {
       return res.status(400).json({ status: "error", message: "Category is required" });
     }
@@ -44,7 +46,9 @@ router.post("/generate-questions", authMiddleware, async (req, res, next) => {
       })
     );
     
-    let triviaCategory = await TriviaCategory.findOne({ category, subDomain });
+    let triviaCategory = await TriviaCategory.findOne(
+      buildCategorySubDomainQuery(category, subDomain)
+    );
     if (!triviaCategory) {
       triviaCategory = new TriviaCategory({ category, subDomain, questions: [] });
     }
@@ -84,7 +88,8 @@ router.post("/generate-questions", authMiddleware, async (req, res, next) => {
 // POST /api/generate-explanation - Generate explanation via OpenAI
 router.post("/generate-explanation", authMiddleware, async (req, res, next) => {
   try {
-    const { question, userAnswer, correctAnswer, questionId, category, subDomain } = req.body;
+    const { question, userAnswer, correctAnswer, questionId } = req.body;
+    const { category, subDomain } = normaliseTaxonomyInput(req.body);
     if (!question || !userAnswer || !correctAnswer) {
       return res.status(400).json({ status: "error", message: "Question, user answer, and correct answer are required" });
     }
@@ -94,7 +99,9 @@ router.post("/generate-explanation", authMiddleware, async (req, res, next) => {
     // Try to find cached explanation if questionId, category, and subDomain are provided
     let explanation = null;
     if (questionId && category && subDomain) {
-      const triviaCategory = await TriviaCategory.findOne({ category, subDomain });
+      const triviaCategory = await TriviaCategory.findOne(
+        buildCategorySubDomainQuery(category, subDomain)
+      );
       if (triviaCategory) {
         console.log('Found trivia category, looking for question:', questionId);
         const questionObj = triviaCategory.questions.id(questionId);
@@ -124,7 +131,9 @@ router.post("/generate-explanation", authMiddleware, async (req, res, next) => {
     // Save explanation to database if questionId, category, and subDomain are provided
     if (questionId && category && subDomain && explanation) {
       console.log('Attempting to save explanation to database...');
-      const triviaCategory = await TriviaCategory.findOne({ category, subDomain });
+      const triviaCategory = await TriviaCategory.findOne(
+        buildCategorySubDomainQuery(category, subDomain)
+      );
       if (triviaCategory) {
         const questionObj = triviaCategory.questions.id(questionId);
         if (questionObj) {

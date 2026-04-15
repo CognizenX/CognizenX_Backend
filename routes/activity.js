@@ -1,6 +1,7 @@
 const express = require("express");
 const UserActivity = require("../models/UserActivity");
 const authMiddleware = require("../middleware/auth");
+const { normaliseTaxonomyInput } = require("../utils/taxonomy");
 
 const router = express.Router();
 
@@ -16,8 +17,11 @@ router.get("/user-preferences", authMiddleware, async (req, res, next) => {
     }
 
     const preferences = activity.categories.map((category) => ({
-      category: category.category,
-      subDomain: category.domain,
+      category: normaliseTaxonomyInput({ category: category.category }).category,
+      subDomain: normaliseTaxonomyInput({
+        category: category.category,
+        domain: category.domain,
+      }).subDomain,
       count: category.count,
     }));
 
@@ -34,7 +38,8 @@ router.get("/user-preferences", authMiddleware, async (req, res, next) => {
 
 // POST /api/log-activity - Log user activity
 router.post("/log-activity", authMiddleware, async (req, res, next) => {
-  const { category, domain } = req.body;
+  const { category, subDomain } = normaliseTaxonomyInput(req.body);
+  const domain = subDomain;
   console.log("req.body", req.body);
   console.log("category", category);
   console.log("domain", domain);
@@ -42,7 +47,7 @@ router.post("/log-activity", authMiddleware, async (req, res, next) => {
   if (!category || !domain) {
     return res.status(400).json({ 
       status: "error", 
-      message: "Both category and domain are required." 
+      message: "Both category and subDomain are required." 
     });
   }
 
