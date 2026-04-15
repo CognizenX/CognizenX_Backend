@@ -62,6 +62,50 @@ describe("GET /api/questions", () => {
     expect(res.body.message).toMatch(/no questions/i);
   });
 
+  it("should map mythology + Hindu to religion + Hindu", async () => {
+    await Trivia.create({
+      category: "religion",
+      subDomain: "Hindu",
+      questions: [
+        {
+          question: "Which epic features Lord Krishna as a key guide?",
+          options: ["Mahabharata", "Quran", "Bible", "Guru Granth Sahib"],
+          correctAnswer: "Mahabharata",
+        },
+      ],
+    });
+
+    const res = await request(app)
+      .get("/api/questions")
+      .query({ category: "mythology", subDomain: "Hindu" });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.status).toBe("success");
+    expect(res.body.questions).toHaveLength(1);
+  });
+
+  it("should map mythology + Other Mythologies to religion + Sikhism", async () => {
+    await Trivia.create({
+      category: "religion",
+      subDomain: "Sikhism",
+      questions: [
+        {
+          question: "Which scripture is central to Sikhism?",
+          options: ["Guru Granth Sahib", "Vedas", "Tripitaka", "Bible"],
+          correctAnswer: "Guru Granth Sahib",
+        },
+      ],
+    });
+
+    const res = await request(app)
+      .get("/api/questions")
+      .query({ category: "mythology", subDomain: "Other Mythologies" });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.status).toBe("success");
+    expect(res.body.questions).toHaveLength(1);
+  });
+
   it("should return 400 if missing query parameters", async () => {
     const res = await request(app).get("/api/questions");
 
