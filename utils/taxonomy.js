@@ -81,7 +81,7 @@ function normaliseSubDomain(subDomain, category) {
 
   if (canonicalCategory === "religion") {
     for (const [canonical, aliases] of Object.entries(RELIGION_SUBDOMAIN_ALIASES)) {
-      if (aliases.includes(key)) {
+      if (aliases.some(alias => toKey(alias) === key)) {
         return canonical;
       }
     }
