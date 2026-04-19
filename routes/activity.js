@@ -1,6 +1,7 @@
 const express = require("express");
 const UserActivity = require("../models/UserActivity");
 const authMiddleware = require("../middleware/auth");
+const { normalizeLegacyCategory } = require("../utils/categoryNormalizer");
 
 const router = express.Router();
 
@@ -15,11 +16,15 @@ router.get("/user-preferences", authMiddleware, async (req, res, next) => {
       return res.json({ preferences: [] }); // Return empty preferences if no activity found
     }
 
-    const preferences = activity.categories.map((category) => ({
-      category: category.category,
-      subDomain: category.domain,
-      count: category.count,
-    }));
+    const preferences = activity.categories.map((category) => {
+      // Normalize legacy category/domain values when serializing response
+      const normalized = normalizeLegacyCategory(category.category, category.domain);
+      return {
+        category: normalized.category,
+        subDomain: normalized.subDomain,
+        count: category.count,
+      };
+    });
 
     // Sort preferences by count (most frequent first)
     preferences.sort((a, b) => b.count - a.count);
@@ -34,7 +39,7 @@ router.get("/user-preferences", authMiddleware, async (req, res, next) => {
 
 // POST /api/log-activity - Log user activity
 router.post("/log-activity", authMiddleware, async (req, res, next) => {
-  const { category, domain } = req.body;
+  let { category, domain } = req.body;
   console.log("req.body", req.body);
   console.log("category", category);
   console.log("domain", domain);
@@ -45,6 +50,11 @@ router.post("/log-activity", authMiddleware, async (req, res, next) => {
       message: "Both category and domain are required." 
     });
   }
+
+  // Normalize legacy category/domain values from request
+  const normalized = normalizeLegacyCategory(category, domain);
+  category = normalized.category;
+  domain = normalized.subDomain;
 
   try {
     const userId = req.user._id; // Get user ID from authMiddleware
