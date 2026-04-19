@@ -11,24 +11,92 @@ router.get("/user-preferences", authMiddleware, async (req, res, next) => {
     console.log("Fetching preferences for User ID:", userId);
 
     const activity = await UserActivity.findOne({ userId });
-    if (!activity || activity.categories.length === 0) {
+    if (!activity) {
       return res.json({ preferences: [] }); // Return empty preferences if no activity found
     }
 
-    const preferences = activity.categories.map((category) => ({
+    // Prefer explicit selected preferences from Add Categories.
+    const selected = Array.isArray(activity.selectedPreferences)
+      ? activity.selectedPreferences
+      : [];
+
+    const source = selected.length > 0 ? selected : activity.categories;
+    if (!source || source.length === 0) {
+      return res.json({ preferences: [] });
+    }
+
+    const preferences = source.map((category) => ({
       category: category.category,
       subDomain: category.domain,
       count: category.count,
     }));
 
-    // Sort preferences by count (most frequent first)
-    preferences.sort((a, b) => b.count - a.count);
+    // Keep explicit selected order, otherwise sort activity by frequency.
+    if (!(selected.length > 0)) {
+      preferences.sort((a, b) => b.count - a.count);
+    }
 
     res.json({ preferences });
   } catch (err) {
     console.error("Error fetching preferences:", err);
     err.statusMessage = "Failed to fetch user preferences.";
     return next(err);
+  }
+});
+
+// PUT /api/user-preferences - Replace explicit selected preferences
+router.put("/user-preferences", authMiddleware, async (req, res, next) => {
+  const { preferences } = req.body || {};
+
+  if (!Array.isArray(preferences)) {
+    return res.status(400).json({
+      status: "error",
+      message: "preferences must be an array.",
+    });
+  }
+
+  try {
+    const userId = req.user._id;
+    let activity = await UserActivity.findOne({ userId });
+    if (!activity) {
+      activity = new UserActivity({ userId, categories: [], selectedPreferences: [] });
+    }
+
+    const seen = new Set();
+    const normalized = [];
+
+    preferences.forEach((item) => {
+      const category = String(item?.category || "").trim();
+      const domain = String(item?.subDomain || item?.domain || "").trim();
+      if (!category || !domain) return;
+
+      const key = `${category}::${domain}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      normalized.push({
+        category,
+        domain,
+        count: 1,
+        lastPlayed: new Date(),
+      });
+    });
+
+    activity.selectedPreferences = normalized;
+    await activity.save();
+
+    return res.json({
+      status: "success",
+      preferences: normalized.map((item) => ({
+        category: item.category,
+        subDomain: item.domain,
+        count: item.count,
+      })),
+    });
+  } catch (error) {
+    console.error("Error saving selected preferences:", error);
+    error.statusMessage = "Failed to save user preferences.";
+    return next(error);
   }
 });
 
