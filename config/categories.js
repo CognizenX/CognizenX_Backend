@@ -35,9 +35,13 @@ const categories = {
     'Indian Literature': ['indian literature', 'indian author', 'indian poet', 'hindi literature', 'indian novel'],
     'Science and Technology in India': ['science', 'technology', 'innovation', 'research', 'engineering'],
   },
-  mythology: {
-    'Hindu': ['hindu mythology', 'god', 'goddess', 'epic', 'mahabharata', 'ramayana'],
-    'Other Mythologies': ['buddhism', 'jainism', 'sikhism', 'christianity', 'islam', 'mythology'],
+  religion: {
+    'Hindu': ['hindu mythology', 'hinduism', 'god', 'goddess', 'epic', 'mahabharata', 'ramayana', 'veda', 'upanishad'],
+    'Islam': ['islam', 'islamic', 'quran', 'hadith', 'mosque', 'prophet', 'eid', 'ramadan'],
+    'Christianity': ['christianity', 'christian', 'bible', 'church', 'jesus', 'gospel', 'easter', 'christmas'],
+    'Sikhism': ['sikhism', 'sikh', 'guru granth sahib', 'gurdwara', 'khalsa', 'punj pyare'],
+    'Buddhism': ['buddhism', 'buddhist', 'buddha', 'dharma', 'sangha', 'nirvana', 'bodhi'],
+    'Jainism': ['jainism', 'jain', 'tirthankara', 'mahavira', 'ahimsa'],
   },
   sports: {
     'Cricket': ['cricket', 'bat', 'ball', 'wicket', 'batsman', 'bowler', 'tournament'],
