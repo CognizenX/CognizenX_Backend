@@ -12,7 +12,7 @@ const RELIGION_SUBDOMAIN_ALIASES = {
     "sikhism",
     "sikh",
     "other mythology",
-    "other mythologies",
+    "Other Mythologies",
     "others mythology",
     "others mythologies",
   ],
@@ -24,14 +24,22 @@ function toKey(value) {
   return String(value || "").trim().toLowerCase();
 }
 
+function escapeRegex(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function makeCaseInsensitiveExactMatch(value) {
+  return new RegExp(`^${escapeRegex(value)}$`, "i");
+}
+
 function getCanonicalCategories() {
-  return Object.keys(categories || {}).map(toKey).filter(Boolean);
+  return Object.keys(categories || {});
 }
 
 function getCanonicalSubDomains(category) {
   const categoryKey = toKey(category);
   const categoryConfig = categories?.[categoryKey] || {};
-  return Object.keys(categoryConfig).map(toKey).filter(Boolean);
+  return Object.keys(categoryConfig);
 }
 
 function getCanonicalSubDomainMap(category) {
@@ -43,23 +51,26 @@ function getCanonicalSubDomainMap(category) {
 }
 
 function normaliseCategory(category) {
-  const key = toKey(category);
+  const raw = String(category || "").trim();
+  const key = toKey(raw);
   if (!key) return "";
 
   const canonicalCategories = getCanonicalCategories();
-  if (canonicalCategories.includes(key)) {
-    return key;
+  const canonicalMatch = canonicalCategories.find((entry) => toKey(entry) === key);
+  if (canonicalMatch) {
+    return canonicalMatch;
   }
 
   if (LEGACY_CATEGORY_ALIASES[key]) {
     return LEGACY_CATEGORY_ALIASES[key];
   }
 
-  return key;
+  return raw;
 }
 
 function normaliseSubDomain(subDomain, category) {
-  const key = toKey(subDomain);
+  const raw = String(subDomain || "").trim();
+  const key = toKey(raw);
   if (!key) return "";
 
   const canonicalCategory = normaliseCategory(category);
@@ -76,7 +87,7 @@ function normaliseSubDomain(subDomain, category) {
     }
   }
 
-  return key;
+  return raw;
 }
 
 function getCategoryAliases(category) {
@@ -85,14 +96,14 @@ function getCategoryAliases(category) {
     return [];
   }
 
-  const aliases = [canonical];
+  const aliases = [canonical, toKey(canonical)];
   for (const [legacyAlias, canonicalCategory] of Object.entries(LEGACY_CATEGORY_ALIASES)) {
     if (canonicalCategory === canonical) {
       aliases.push(legacyAlias);
     }
   }
 
-  return Array.from(new Set(aliases.map(toKey).filter(Boolean)));
+  return Array.from(new Set(aliases.map((value) => String(value || "").trim()).filter(Boolean)));
 }
 
 function getSubDomainAliases(subDomain, category) {
@@ -109,7 +120,9 @@ function getSubDomainAliases(subDomain, category) {
     return Array.from(new Set(values.map((v) => String(v || "").trim()).filter(Boolean)));
   }
 
-  return Array.from(new Set([canonicalSubDomain, toKey(canonicalSubDomain)].filter(Boolean)));
+  return Array.from(
+    new Set([canonicalSubDomain, toKey(canonicalSubDomain), String(subDomain || "").trim()].filter(Boolean))
+  );
 }
 
 function normaliseTaxonomyInput({ category, subDomain, domain } = {}) {
@@ -126,7 +139,7 @@ function normaliseTaxonomyInput({ category, subDomain, domain } = {}) {
 function buildCategoryOnlyQuery(category) {
   const categoryAliases = getCategoryAliases(category);
   return {
-    category: { $in: categoryAliases },
+    category: { $in: categoryAliases.map(makeCaseInsensitiveExactMatch) },
   };
 }
 
@@ -135,7 +148,8 @@ function buildCategorySubDomainQuery(category, subDomain) {
   const subDomainAliases = getSubDomainAliases(subDomain, category);
 
   if (subDomainAliases.length) {
-    query.subDomain = { $in: subDomainAliases };
+    const subDomainMatchers = subDomainAliases.map(makeCaseInsensitiveExactMatch);
+    query.subDomain = { $in: subDomainMatchers };
   }
 
   return query;

@@ -12,6 +12,7 @@ const TriviaCategory = require('../models/TriviaCategory');
 const SchedulerMetadata = require('../models/SchedulerMetadata');
 const { generateQuestions, generateExplanation } = require('./openaiService');
 const { formatQuestions, deduplicateAgainst } = require('../utils/questionFormatter');
+const { buildCategorySubDomainQuery } = require('../utils/taxonomy');
 
 const QUESTION_GENERATION_COUNT = 10; 
 
@@ -116,12 +117,14 @@ async function generateQuestionsForCategory(category, domain, retries = 3) {
       }
 
       // Find or create the TriviaCategory document
-      let triviaCategory = await TriviaCategory.findOne({ category, domain });
+      let triviaCategory = await TriviaCategory.findOne(
+        buildCategorySubDomainQuery(category, domain)
+      );
 
       if (!triviaCategory) {
         triviaCategory = new TriviaCategory({
           category,
-          domain,
+          subDomain: domain,
           questions: [],
         });
         console.log(`[GENERATOR] Created new category document for ${category}/${domain}`);

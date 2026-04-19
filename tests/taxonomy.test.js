@@ -58,7 +58,7 @@ describe("taxonomy normalization", () => {
         "Sikhism",
         "sikh",
         "other mythology",
-        "other mythologies",
+        "Other Mythologies",
         "others mythology",
         "others mythologies",
       ])
