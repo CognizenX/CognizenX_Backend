@@ -17,7 +17,7 @@ router.get("/user-preferences", authMiddleware, async (req, res, next) => {
 
     const preferences = activity.categories.map((category) => ({
       category: category.category,
-      subDomain: category.domain,
+      subDomain: category.subDomain || category.domain,
       count: category.count,
     }));
 
@@ -34,15 +34,16 @@ router.get("/user-preferences", authMiddleware, async (req, res, next) => {
 
 // POST /api/log-activity - Log user activity
 router.post("/log-activity", authMiddleware, async (req, res, next) => {
-  const { category, domain } = req.body;
+  const { category } = req.body;
+  const resolvedDomain = req.body.subDomain || req.body.domain;
   console.log("req.body", req.body);
   console.log("category", category);
-  console.log("domain", domain);
+  console.log("domain", resolvedDomain);
   
-  if (!category || !domain) {
+  if (!category || !resolvedDomain) {
     return res.status(400).json({ 
       status: "error", 
-      message: "Both category and domain are required." 
+      message: "Both category and subDomain/domain are required." 
     });
   }
 
@@ -55,7 +56,7 @@ router.post("/log-activity", authMiddleware, async (req, res, next) => {
     }
 
     const categoryIndex = activity.categories.findIndex(
-      (c) => c.category === category && c.domain === domain
+      (c) => c.category === category && (c.domain === resolvedDomain || c.subDomain === resolvedDomain)
     );
 
     if (categoryIndex >= 0) {
@@ -64,7 +65,7 @@ router.post("/log-activity", authMiddleware, async (req, res, next) => {
     } else {
       activity.categories.push({ 
         category, 
-        domain,
+        domain: resolvedDomain,
         count: 1, 
         lastPlayed: new Date() 
       });
