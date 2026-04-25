@@ -278,7 +278,7 @@ async function testScheduler() {
       if (failures.length > 0) {
         console.log(`\n⚠️  ${failures.length} categories had errors:`);
         failures.forEach(f => {
-          console.log(`  • ${f.category}/${f.domain}: ${f.error}`);
+          console.log(`  • ${f.category}/${f.subDomain || 'unknown'}: ${f.error}`);
         });
       }
 
@@ -315,9 +315,9 @@ async function testScheduler() {
             continue;
           }
 
-          const { category, domain, questions } = result;
+          const { category, subDomain, questions } = result;
 
-          console.log(`\n📚 ${category}/${domain} (${questions.length} questions)`);
+          console.log(`\n📚 ${category}/${subDomain || 'unknown'} (${questions.length} questions)`);
           console.log('─'.repeat(70));
 
           // Display each question

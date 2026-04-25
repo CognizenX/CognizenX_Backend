@@ -2,7 +2,7 @@
  * Orchestrates bulk pre-generation of questions
  * 
  * Key Functions:
- * - generateQuestionsForCategory() - Generate and save questions for one category/domain
+ * - generateQuestionsForCategory() - Generate and save questions for one category/subDomain
  * - runWeeklyGeneration() - Process all categories in the generation plan
  * - getSchedulerMetadata() - Track how many times scheduler has run
  * - updateSchedulerMetadata() - Increment run count
@@ -16,11 +16,11 @@ const { formatQuestions, deduplicateAgainst } = require('../utils/questionFormat
 const QUESTION_GENERATION_COUNT = 10; 
 
 /**
- * Generate and save questions for a single category/domain
+ * Generate and save questions for a single category/subDomain
  * 
  * PARAMETERS:
  * - category: e.g. "politics"
- * - domain: e.g. "national"
+ * - subDomain: e.g. "national"
  * - retries: how many times to retry on failure
  * 
  * NOTE: Uses QUESTION_GENERATION_COUNT constant
@@ -33,25 +33,25 @@ const QUESTION_GENERATION_COUNT = 10;
  *   error?: string
  * }
  */
-async function generateQuestionsForCategory(category, domain, retries = 3) {
+async function generateQuestionsForCategory(category, subDomain, retries = 3) {
   let lastError;
 
   // Retry logic: attempt generation up to 3 times in case of API failures
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       console.log(
-        `[GENERATOR] Generating ${QUESTION_GENERATION_COUNT} questions for "${category}/${domain}" (Attempt ${attempt}/${retries})`
+        `[GENERATOR] Generating ${QUESTION_GENERATION_COUNT} questions for "${category}/${subDomain}" (Attempt ${attempt}/${retries})`
       );
 
       // Call generateQuestions() from routes/ai.js
-      const generatedQuestions = await generateQuestions(category, domain, QUESTION_GENERATION_COUNT);
+      const generatedQuestions = await generateQuestions(category, subDomain, QUESTION_GENERATION_COUNT);
 
       if (!generatedQuestions || generatedQuestions.length === 0) {
         throw new Error('OpenAI returned no questions');
       }
 
       console.log(
-        `[GENERATOR] OpenAI returned ${generatedQuestions.length} questions for ${category}/${domain}`
+        `[GENERATOR] OpenAI returned ${generatedQuestions.length} questions for ${category}/${subDomain}`
       );
 
       const generatedQuestionsWithExplanations = await Promise.all(
@@ -107,7 +107,7 @@ async function generateQuestionsForCategory(category, domain, retries = 3) {
       // Adds metadata like subDomain, aiGenerated flag, difficulty, createdAt
       const formattedQuestions = formatQuestions(validQuestions, {
         category,
-        subDomain: domain,
+        subDomain: subDomain,
         aiGenerated: true,
       });
 
@@ -116,22 +116,22 @@ async function generateQuestionsForCategory(category, domain, retries = 3) {
       }
 
       // Find or create the TriviaCategory document
-      let triviaCategory = await TriviaCategory.findOne({ category, domain });
+      let triviaCategory = await TriviaCategory.findOne({ category, subDomain: subDomain });
 
       if (!triviaCategory) {
         triviaCategory = new TriviaCategory({
           category,
-          domain,
+          subDomain: subDomain,
           questions: [],
         });
-        console.log(`[GENERATOR] Created new category document for ${category}/${domain}`);
+        console.log(`[GENERATOR] Created new category document for ${category}/${subDomain}`);
       }
 
       // Check for duplicates
       const { unique, addedCount, duplicateCount } = deduplicateAgainst(
         formattedQuestions,
         triviaCategory.questions,
-        `${category}/${domain}`
+        `${category}/${subDomain}`
       );
 
       // Add new questions and save to MongoDB
@@ -139,7 +139,7 @@ async function generateQuestionsForCategory(category, domain, retries = 3) {
       await triviaCategory.save();
 
       console.log(
-        `[GENERATOR] SUCCESS: Added ${addedCount} questions (${duplicateCount} duplicates skipped) for "${category}/${domain}"`
+        `[GENERATOR] SUCCESS: Added ${addedCount} questions (${duplicateCount} duplicates skipped) for "${category}/${subDomain}"`
       );
 
       // Return success summary with the generated questions
@@ -152,7 +152,7 @@ async function generateQuestionsForCategory(category, domain, retries = 3) {
     } catch (error) {
       lastError = error;
       console.error(
-        `[GENERATOR] Attempt ${attempt} failed for "${category}/${domain}":`,
+        `[GENERATOR] Attempt ${attempt} failed for "${category}/${subDomain}":`,
         error.message
       );
 
@@ -167,7 +167,7 @@ async function generateQuestionsForCategory(category, domain, retries = 3) {
 
   // All retries exhausted
   console.error(
-    `[GENERATOR] FAILED after ${retries} attempts for "${category}/${domain}"`
+    `[GENERATOR] FAILED after ${retries} attempts for "${category}/${subDomain}"`
   );
   return {
     success: false,
@@ -257,7 +257,7 @@ async function updateSchedulerMetadata(totalQuestionsGenerated = 0) {
  * 5. Updates metadata
  * 
  * PARAMETERS:
- * - generationPlan: Array of {category, domain, questionCount, tier, ...}
+ * - generationPlan: Array of {category, subDomain|domain, questionCount, tier, ...}
  * 
  * RETURNS:
  * {
@@ -265,7 +265,7 @@ async function updateSchedulerMetadata(totalQuestionsGenerated = 0) {
  *   weekNumber: number,
  *   totalQuestionsGenerated: number,
  *   categoriesProcessed: number,
- *   results: [ { category, domain, success, generated, duplicates, error? } ]
+ *   results: [ { category, subDomain, success, generated, duplicates, error? } ]
  * }
  */
 async function runWeeklyGeneration(generationPlan) {
@@ -289,17 +289,32 @@ async function runWeeklyGeneration(generationPlan) {
     let categoriesWithQuestions = 0;
 
     for (const planItem of generationPlan) {
-      const { category, domain, tier } = planItem;
+      const { category, subDomain, domain, tier } = planItem;
+      const resolvedSubDomain = subDomain || domain;
+
+      if (!resolvedSubDomain) {
+        results.push({
+          category,
+          subDomain: null,
+          tier,
+          success: false,
+          questionsGenerated: 0,
+          duplicates: 0,
+          questions: [],
+          error: 'Missing subDomain/domain in generation plan item',
+        });
+        continue;
+      }
 
       // Generate questions for this category (always uses QUESTION_GENERATION_COUNT)
       const result = await generateQuestionsForCategory(
         category,
-        domain
+        resolvedSubDomain
       );
 
       results.push({
         category,
-        domain,
+        subDomain: resolvedSubDomain,
         tier,
         ...result,
       });

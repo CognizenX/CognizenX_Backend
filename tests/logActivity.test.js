@@ -64,6 +64,51 @@ describe("POST /api/log-activity", () => {
     expect(activity.categories[0].count).toBe(2);
   });
 
+  it("should log activity when subDomain is provided", async () => {
+    const res = await request(app)
+      .post("/api/log-activity")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        category: "science",
+        subDomain: "Space"
+      });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.status).toBe("success");
+
+    const activity = await UserActivity.findOne({ userId });
+    expect(activity).toBeDefined();
+    expect(activity.categories.length).toBe(1);
+    expect(activity.categories[0].category).toBe("science");
+    expect(activity.categories[0].domain).toBe("Space");
+    expect(activity.categories[0].count).toBe(1);
+  });
+
+  it("should increment count when existing entry matches subDomain payload", async () => {
+    await UserActivity.create({
+      userId,
+      categories: [{
+        category: "entertainment",
+        domain: "Bollywood Movies",
+        count: 1
+      }]
+    });
+
+    const res = await request(app)
+      .post("/api/log-activity")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        category: "entertainment",
+        subDomain: "Bollywood Movies"
+      });
+
+    expect(res.statusCode).toBe(200);
+
+    const activity = await UserActivity.findOne({ userId });
+    expect(activity.categories.length).toBe(1);
+    expect(activity.categories[0].count).toBe(2);
+  });
+
   it("should return 400 if category or domain missing", async () => {
     const res = await request(app)
       .post("/api/log-activity")

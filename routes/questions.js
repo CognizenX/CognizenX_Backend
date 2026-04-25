@@ -256,7 +256,7 @@ const handleWeeklyGeneration = async (req, res, next) => {
     if (failures.length > 0) {
       console.warn(`[CRON] ⚠️ ${failures.length} categories had errors:`);
       failures.forEach(f => {
-        const detail = `${f.category}/${f.domain}: ${f.error}`;
+        const detail = `${f.category}/${f.subDomain || 'unknown'}: ${f.error}`;
         console.warn(`  - ${detail}`);
         failureDetails.push(detail);
       });
