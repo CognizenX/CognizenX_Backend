@@ -37,17 +37,76 @@ router.get("/user-preferences", authMiddleware, async (req, res, next) => {
   }
 });
 
+// PUT /api/user-preferences - Replace user preferences from Categories screen
+router.put("/user-preferences", authMiddleware, async (req, res, next) => {
+  const { preferences } = req.body || {};
+
+  if (!Array.isArray(preferences)) {
+    return res.status(400).json({
+      status: "error",
+      message: "preferences must be an array.",
+    });
+  }
+
+  try {
+    const userId = req.user._id;
+    let activity = await UserActivity.findOne({ userId });
+
+    if (!activity) {
+      activity = new UserActivity({ userId, categories: [] });
+    }
+
+    const seen = new Set();
+    const normalized = [];
+
+    preferences.forEach((item) => {
+      const category = String(item?.category || "").trim();
+      const domain = String(item?.subDomain || item?.domain || "").trim();
+
+      if (!category || !domain) return;
+
+      const key = `${category}::${domain}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      normalized.push({
+        category,
+        domain,
+        count: 1,
+        lastPlayed: new Date(),
+      });
+    });
+
+    activity.categories = normalized;
+    await activity.save();
+
+    return res.json({
+      status: "success",
+      preferences: normalized.map((item) => ({
+        category: item.category,
+        subDomain: item.domain,
+        count: item.count,
+      })),
+    });
+  } catch (error) {
+    console.error("Error saving user preferences:", error);
+    error.statusMessage = "Failed to save user preferences.";
+    return next(error);
+  }
+});
+
 // POST /api/log-activity - Log user activity
 router.post("/log-activity", authMiddleware, async (req, res, next) => {
-  let { category, domain } = req.body;
+  const { category } = req.body;
+  const resolvedDomain = req.body.subDomain || req.body.domain;
   console.log("req.body", req.body);
   console.log("category", category);
-  console.log("domain", domain);
+  console.log("domain", resolvedDomain);
   
-  if (!category || !domain) {
+  if (!category || !resolvedDomain) {
     return res.status(400).json({ 
       status: "error", 
-      message: "Both category and domain are required." 
+      message: "Both category and subDomain/domain are required." 
     });
   }
 
@@ -65,7 +124,7 @@ router.post("/log-activity", authMiddleware, async (req, res, next) => {
     }
 
     const categoryIndex = activity.categories.findIndex(
-      (c) => c.category === category && c.domain === domain
+      (c) => c.category === category && (c.domain === resolvedDomain || c.subDomain === resolvedDomain)
     );
 
     if (categoryIndex >= 0) {
@@ -74,7 +133,7 @@ router.post("/log-activity", authMiddleware, async (req, res, next) => {
     } else {
       activity.categories.push({ 
         category, 
-        domain,
+        domain: resolvedDomain,
         count: 1, 
         lastPlayed: new Date() 
       });
