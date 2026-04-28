@@ -18,7 +18,8 @@ router.get("/user-preferences", authMiddleware, async (req, res, next) => {
 
     const preferences = activity.categories.map((category) => {
       // Normalize legacy category/domain values when serializing response
-      const normalized = normalizeLegacyCategory(category.category, category.domain);
+      const rawSubDomain = category.subDomain || category.domain;
+      const normalized = normalizeLegacyCategory(category.category, rawSubDomain);
       return {
         category: normalized.category,
         subDomain: normalized.subDomain,
@@ -61,17 +62,23 @@ router.put("/user-preferences", authMiddleware, async (req, res, next) => {
 
     preferences.forEach((item) => {
       const category = String(item?.category || "").trim();
-      const domain = String(item?.subDomain || item?.domain || "").trim();
+      const subDomain = String(item?.subDomain || item?.domain || "").trim();
 
-      if (!category || !domain) return;
+      if (!category || !subDomain) return;
 
-      const key = `${category}::${domain}`;
+      const legacyNormalized = normalizeLegacyCategory(category, subDomain);
+      const nextCategory = String(legacyNormalized.category || "").trim();
+      const nextDomain = String(legacyNormalized.subDomain || "").trim();
+
+      if (!nextCategory || !nextDomain) return;
+
+      const key = `${nextCategory}::${nextDomain}`;
       if (seen.has(key)) return;
       seen.add(key);
 
       normalized.push({
-        category,
-        domain,
+        category: nextCategory,
+        subDomain: nextDomain,
         count: 1,
         lastPlayed: new Date(),
       });
@@ -84,7 +91,7 @@ router.put("/user-preferences", authMiddleware, async (req, res, next) => {
       status: "success",
       preferences: normalized.map((item) => ({
         category: item.category,
-        subDomain: item.domain,
+        subDomain: item.subDomain,
         count: item.count,
       })),
     });
@@ -97,23 +104,23 @@ router.put("/user-preferences", authMiddleware, async (req, res, next) => {
 
 // POST /api/log-activity - Log user activity
 router.post("/log-activity", authMiddleware, async (req, res, next) => {
-  const { category } = req.body;
-  const resolvedDomain = req.body.subDomain || req.body.domain;
+  let { category } = req.body;
+  const resolvedSubDomain = req.body.subDomain || req.body.domain;
   console.log("req.body", req.body);
   console.log("category", category);
-  console.log("domain", resolvedDomain);
+  console.log("subDomain", resolvedSubDomain);
   
-  if (!category || !resolvedDomain) {
+  if (!category || !resolvedSubDomain) {
     return res.status(400).json({ 
       status: "error", 
-      message: "Both category and subDomain/domain are required." 
+      message: "Both category and subDomain are required." 
     });
   }
 
   // Normalize legacy category/domain values from request
-  const normalized = normalizeLegacyCategory(category, domain);
+  const normalized = normalizeLegacyCategory(category, resolvedSubDomain);
   category = normalized.category;
-  domain = normalized.subDomain;
+  const subDomain = normalized.subDomain;
 
   try {
     const userId = req.user._id; // Get user ID from authMiddleware
@@ -124,16 +131,22 @@ router.post("/log-activity", authMiddleware, async (req, res, next) => {
     }
 
     const categoryIndex = activity.categories.findIndex(
-      (c) => c.category === category && (c.domain === resolvedDomain || c.subDomain === resolvedDomain)
+      (c) => c.category === category && (c.subDomain || c.domain) === subDomain
     );
 
     if (categoryIndex >= 0) {
       activity.categories[categoryIndex].count += 1;
       activity.categories[categoryIndex].lastPlayed = new Date();
+
+      // Canonicalize legacy records in-place
+      activity.categories[categoryIndex].subDomain = subDomain;
+      if (activity.categories[categoryIndex].domain != null) {
+        activity.categories[categoryIndex].domain = undefined;
+      }
     } else {
       activity.categories.push({ 
         category, 
-        domain: resolvedDomain,
+        subDomain,
         count: 1, 
         lastPlayed: new Date() 
       });

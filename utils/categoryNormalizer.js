@@ -14,8 +14,12 @@ const LEGACY_CATEGORY_MAP = {
 };
 
 const LEGACY_SUBDOMAIN_FALLBACK = {
-  'Other Mythologies': 'Sikhism',
+  'other mythologies': 'Sikhism',
 };
+
+function normKey(value) {
+  return String(value ?? '').trim().toLowerCase();
+}
 
 /**
  * Normalize legacy category/subDomain values to new names
@@ -29,14 +33,18 @@ function normalizeLegacyCategory(category, subDomain) {
   let normalizedCategory = category;
   let normalizedSubDomain = subDomain;
 
-  // Map old category names to new ones
-  if (category && category in LEGACY_CATEGORY_MAP) {
-    normalizedCategory = LEGACY_CATEGORY_MAP[category];
+  // Map old category names to new ones (case-insensitive)
+  const categoryKey = normKey(category);
+  if (categoryKey) {
+    normalizedCategory = LEGACY_CATEGORY_MAP[categoryKey] || categoryKey;
   }
 
-  // Handle fallback for "Other Mythologies" → "Sikhism"
-  if (subDomain === 'Other Mythologies') {
-    normalizedSubDomain = LEGACY_SUBDOMAIN_FALLBACK['Other Mythologies'];
+  // Handle fallback for "Other Mythologies" → "Sikhism" (case-insensitive)
+  const subDomainKey = normKey(subDomain);
+  if (subDomainKey && subDomainKey in LEGACY_SUBDOMAIN_FALLBACK) {
+    normalizedSubDomain = LEGACY_SUBDOMAIN_FALLBACK[subDomainKey];
+  } else if (subDomain != null) {
+    normalizedSubDomain = String(subDomain).trim();
   }
 
   return {

@@ -8,6 +8,42 @@ const {
 const { generateQuestions } = require("../services/openaiService");
 const { runWeeklyGeneration, QUESTION_GENERATION_COUNT } = require("../services/questionScheduler");
 const { categories } = require("../config/categories");
+const { normalizeLegacyCategory } = require("../utils/categoryNormalizer");
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function buildCategoryQuery(category) {
+  const key = String(category || "").trim().toLowerCase();
+
+  // During the migration window, treat mythology as an alias for religion.
+  if (key === "religion") {
+    return { $in: ["religion", "mythology", "Religion", "Mythology"] };
+  }
+
+  // Preserve the original input but tolerate common casing.
+  const raw = String(category || "").trim();
+  return { $in: [raw, raw.toLowerCase(), raw.toUpperCase()] };
+}
+
+function buildSubDomainQuery(subDomain) {
+  const raw = String(subDomain || "").trim();
+  // Case-insensitive exact match so stored "hindu" still matches "Hindu".
+  const rx = new RegExp(`^${escapeRegExp(raw)}$`, "i");
+
+  // Legacy support: "Other Mythologies" was folded into "Sikhism".
+  if (String(raw).toLowerCase() === "sikhism") {
+    return {
+      $in: [
+        rx,
+        new RegExp(`^${escapeRegExp("Other Mythologies")}$`, "i"),
+      ],
+    };
+  }
+
+  return rx;
+}
 
 // Get email service for notifications
 const { sendCronAlert } = require("../services/mailer");
@@ -23,12 +59,19 @@ router.post("/add-questions", async (req, res, next) => {
   const { category, questions } = req.body;
 
   try {
-    let triviaCategory = await TriviaCategory.findOne({ category, subDomain });
+    const normalized = normalizeLegacyCategory(category, subDomain);
+    const nextCategory = normalized.category;
+    const nextSubDomain = normalized.subDomain;
+
+    let triviaCategory = await TriviaCategory.findOne({
+      category: nextCategory,
+      subDomain: nextSubDomain,
+    });
 
     if (!triviaCategory) {
       triviaCategory = new TriviaCategory({
-        category,
-        subDomain,
+        category: nextCategory,
+        subDomain: nextSubDomain,
         questions: [],
       });
     }
@@ -67,7 +110,12 @@ router.get("/questions", async (req, res, next) => {
     });
   }
   try {
-    const triviaCategory = await TriviaCategory.findOne({ category, subDomain });
+    const normalized = normalizeLegacyCategory(category, subDomain);
+
+    const triviaCategory = await TriviaCategory.findOne({
+      category: buildCategoryQuery(normalized.category),
+      subDomain: buildSubDomainQuery(normalized.subDomain),
+    });
 
     if (!triviaCategory || !triviaCategory.questions.length) {
       return res.status(404).json({
@@ -96,20 +144,42 @@ router.get("/random-questions", async (req, res, next) => {
 
   const categoryList = categories.split(',');
 
+  const normalizedQuery = normalizeLegacyCategory(null, subDomain);
+  const normalizedSubDomain = normalizedQuery.subDomain;
+
+  function matchesSubDomain(questionSubDomain) {
+    const q = String(questionSubDomain || '').trim().toLowerCase();
+    const requested = String(normalizedSubDomain || '').trim().toLowerCase();
+
+    if (!requested) return true;
+    if (q === requested) return true;
+
+    // Legacy support: "Other Mythologies" was folded into "Sikhism".
+    if (requested === 'sikhism' && q === 'other mythologies') return true;
+    return false;
+  }
+
   try {
     let savedQuestions = [];
     
     // For each category, get saved questions from the bank
     for (const category of categoryList) {
-      const query = subDomain
-        ? { category, subDomain }
-        : { category };
+      const normalized = normalizeLegacyCategory(category, normalizedSubDomain);
+      const categoryQuery = {
+        category: buildCategoryQuery(normalized.category),
+      };
 
-      let triviaCategory = await TriviaCategory.findOne(query);
+      if (normalizedSubDomain) {
+        categoryQuery.subDomain = buildSubDomainQuery(normalizedSubDomain);
+      }
+
+      let triviaCategory = await TriviaCategory.findOne(categoryQuery);
 
       // Fall back to any document for this category if the specific subDomain has no questions
       if (!triviaCategory || triviaCategory.questions.length === 0) {
-        const anyCategoryQuestions = await TriviaCategory.findOne({ category });
+        const anyCategoryQuestions = await TriviaCategory.findOne({
+          category: buildCategoryQuery(normalized.category),
+        });
         if (anyCategoryQuestions && anyCategoryQuestions.questions.length > 0) {
           triviaCategory = anyCategoryQuestions;
         }
@@ -117,10 +187,10 @@ router.get("/random-questions", async (req, res, next) => {
 
       if (triviaCategory && triviaCategory.questions.length > 0) {
         let categorySavedQuestions = [];
-        if (subDomain) {
+        if (normalizedSubDomain) {
           categorySavedQuestions = triviaCategory.questions.filter(q => {
             const questionSubDomain = q.subDomain || triviaCategory.subDomain;
-            return questionSubDomain === subDomain || triviaCategory.subDomain === subDomain;
+            return matchesSubDomain(questionSubDomain);
           });
         } else {
           categorySavedQuestions = triviaCategory.questions;
@@ -135,7 +205,7 @@ router.get("/random-questions", async (req, res, next) => {
         questions: [],
         totalAvailable: 0,
         generated: 0,
-        message: subDomain
+        message: normalizedSubDomain
           ? `No questions available for ${categoryList.join(', ')} / ${subDomain}.`
           : 'No questions available for the selected categories.'
       });
@@ -212,13 +282,13 @@ const handleWeeklyGeneration = async (req, res, next) => {
     console.log(`[CRON] Current week: ${metadata.weekNumber}, Next week: ${nextWeek}`);
     console.log(`[CRON] Total questions generated so far: ${metadata.totalQuestionsGenerated}`);
 
-    // Create simple generation plan: 10 questions per category/domain
+    // Create simple generation plan: 10 questions per category/subDomain
     const plan = [];
     for (const category in categories) {
-      for (const domain in categories[category]) {
+      for (const subDomain in categories[category]) {
         plan.push({
           category,
-          domain,
+          subDomain,
           questionCount: QUESTION_GENERATION_COUNT,
           tier: 'standard'
         });

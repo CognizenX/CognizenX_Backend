@@ -140,7 +140,7 @@ async function testScheduler() {
         console.log(`\n${tier.toUpperCase()} (${categories.length} categories):`);
         categories.forEach((p, idx) => {
           console.log(
-            `  ${idx + 1}. ${p.category}/${p.domain}`.padEnd(45) +
+            `  ${idx + 1}. ${p.category}/${p.subDomain}`.padEnd(45) +
             `${p.questionCount}q`
           );
         });
@@ -226,7 +226,7 @@ async function testScheduler() {
     console.log('\nSample categories (first 5):');
     displayPlan.slice(0, 5).forEach((p, i) => {
       console.log(
-        `  ${i + 1}. ${p.category}/${p.domain}`.padEnd(40) +
+        `  ${i + 1}. ${p.category}/${p.subDomain}`.padEnd(40) +
         `${p.questionCount}q`.padEnd(8) +
         `(${p.tier})`
       );
