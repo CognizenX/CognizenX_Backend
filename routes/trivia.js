@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 
 const authMiddleware = require("../middleware/auth");
 const { validate } = require("../middleware/validate");
+const { normalizeLegacyCategory } = require("../utils/categoryNormalizer");
 
 const TriviaCategory = require("../models/TriviaCategory");
 const TriviaAttempt = require("../models/TriviaAttempt");
@@ -66,6 +67,11 @@ router.post("/attempts", authMiddleware, validate(attemptSchema), async (req, re
       return res.status(404).json({ message: "Question not found" });
     }
 
+    // Normalize legacy category/subDomain values
+    const normalized = normalizeLegacyCategory(triviaDoc.category, triviaDoc.subDomain);
+    const normalizedCategory = normalized.category;
+    const normalizedSubDomain = normalized.subDomain;
+
     const question = triviaDoc.questions[0];
     const correctAnswer = normaliseAnswer(question.correctAnswer || question.correct_answer);
 
@@ -80,8 +86,8 @@ router.post("/attempts", authMiddleware, validate(attemptSchema), async (req, re
     const attempt = await TriviaAttempt.create({
       userId: req.user._id,
       questionId: qid,
-      category: triviaDoc.category,
-      subDomain: triviaDoc.subDomain,
+      category: normalizedCategory,
+      subDomain: normalizedSubDomain,
       selectedAnswer: selected,
       isCorrect,
       timeTakenMs,
@@ -95,8 +101,8 @@ router.post("/attempts", authMiddleware, validate(attemptSchema), async (req, re
       await updateUserQuestionStats({
         userId: req.user._id,
         questionId: qid,
-        category: triviaDoc.category,
-        subDomain: triviaDoc.subDomain,
+        category: normalizedCategory,
+        subDomain: normalizedSubDomain,
         isCorrect,
         timeTakenMs,
         now,
@@ -104,8 +110,8 @@ router.post("/attempts", authMiddleware, validate(attemptSchema), async (req, re
 
       await updateSeenAndMaybeSchedule({
         questionId: qid,
-        category: triviaDoc.category,
-        subDomain: triviaDoc.subDomain,
+        category: normalizedCategory,
+        subDomain: normalizedSubDomain,
         userId: req.user._id,
         now,
       });
@@ -224,6 +230,11 @@ router.get("/metrics/daily", authMiddleware, validate(metricsQuerySchema, "query
   try {
     const { days, category, subDomain } = req.query;
 
+    // Normalize legacy category/subDomain query parameters
+    const normalized = normalizeLegacyCategory(category, subDomain);
+    const normalizedCategory = normalized.category;
+    const normalizedSubDomain = normalized.subDomain;
+
     const now = new Date();
     const start = addDaysUTC(now, -Number(days) + 1);
     start.setUTCHours(0, 0, 0, 0);
@@ -233,8 +244,8 @@ router.get("/metrics/daily", authMiddleware, validate(metricsQuerySchema, "query
       attemptedAt: { $gte: start },
     };
 
-    if (category) match.category = category;
-    if (subDomain) match.subDomain = subDomain;
+    if (normalizedCategory) match.category = normalizedCategory;
+    if (normalizedSubDomain) match.subDomain = normalizedSubDomain;
 
     const rows = await TriviaAttempt.aggregate([
       { $match: match },

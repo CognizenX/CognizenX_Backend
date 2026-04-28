@@ -257,7 +257,8 @@ async function updateSchedulerMetadata(totalQuestionsGenerated = 0) {
  * 5. Updates metadata
  * 
  * PARAMETERS:
- * - generationPlan: Array of {category, subDomain|domain, questionCount, tier, ...}
+ * - generationPlan: Array of {category, subDomain, questionCount, tier, ...}
+ *   (Legacy input supports `domain` as an alias for `subDomain`.)
  * 
  * RETURNS:
  * {
@@ -289,8 +290,8 @@ async function runWeeklyGeneration(generationPlan) {
     let categoriesWithQuestions = 0;
 
     for (const planItem of generationPlan) {
-      const { category, subDomain, domain, tier } = planItem;
-      const resolvedSubDomain = subDomain || domain;
+      const { category, subDomain, domain: legacyDomain, tier } = planItem;
+      const resolvedSubDomain = subDomain || legacyDomain;
 
       if (!resolvedSubDomain) {
         results.push({
@@ -301,7 +302,7 @@ async function runWeeklyGeneration(generationPlan) {
           questionsGenerated: 0,
           duplicates: 0,
           questions: [],
-          error: 'Missing subDomain/domain in generation plan item',
+          error: 'Missing subDomain in generation plan item',
         });
         continue;
       }
