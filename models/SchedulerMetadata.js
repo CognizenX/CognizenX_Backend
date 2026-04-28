@@ -8,18 +8,6 @@ const SchedulerMetadataSchema = new mongoose.Schema({
     index: true,
   },
 
-  category: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-
-  subDomain: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-
   lastRunAt: {
     type: Date,
     default: null,
@@ -39,6 +27,6 @@ const SchedulerMetadataSchema = new mongoose.Schema({
 });
 
 // One scheduler record per category+subDomain per week
-SchedulerMetadataSchema.index({ category: 1, subDomain: 1, weekNumber: 1 }, { unique: true });
+SchedulerMetadataSchema.index({weekNumber: 1 }, { unique: true });
 
 module.exports = mongoose.model("SchedulerMetadata", SchedulerMetadataSchema);

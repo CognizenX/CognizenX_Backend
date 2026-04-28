@@ -13,6 +13,10 @@
 require("dotenv").config();
 const mongoose = require("mongoose");
 const TriviaCategory = require("../models/TriviaCategory");
+const UserActivity = require("../models/UserActivity");
+const TriviaAttempt = require("../models/TriviaAttempt");
+const UserQuestionStats = require("../models/UserQuestionStats");
+const SchedulerMetadata = require("../models/SchedulerMetadata");
 
 const args = process.argv.slice(2);
 const DRY_RUN = args.includes("--dry-run");
@@ -31,6 +35,39 @@ function canonicalCategory(category) {
   const key = toKey(category);
   if (key === "mythology") return "religion";
   return key;
+}
+
+async function updateTopLevelCategory(Model, modelName) {
+  log(`${modelName}: updating category field...`);
+
+  const filter = { category: { $regex: /^mythology$/i } };
+  if (DRY_RUN) {
+    const matched = await Model.countDocuments(filter);
+    console.log(`${modelName}: matched ${matched}, changed ${matched} (dry run)`);
+    return;
+  }
+
+  const result = await Model.updateMany(filter, { $set: { category: "religion" } });
+  console.log(`${modelName}: matched ${result.matchedCount}, changed ${result.modifiedCount}`);
+}
+
+async function updateUserActivityEmbeddedCategories() {
+  log("UserActivity: updating embedded categories[].category...");
+
+  const filter = { "categories.category": { $regex: /^mythology$/i } };
+  if (DRY_RUN) {
+    const matched = await UserActivity.countDocuments(filter);
+    console.log(`UserActivity: matched ${matched}, changed ${matched} (dry run)`);
+    return;
+  }
+
+  const result = await UserActivity.updateMany(
+    filter,
+    { $set: { "categories.$[elem].category": "religion" } },
+    { arrayFilters: [{ "elem.category": { $regex: /^mythology$/i } }] }
+  );
+
+  console.log(`UserActivity: matched ${result.matchedCount}, changed ${result.modifiedCount}`);
 }
 
 async function migrateTriviaCategories() {
@@ -54,6 +91,20 @@ async function migrateTriviaCategories() {
   console.log(`TriviaCategory: scanned ${docs.length}, changed ${changed}${DRY_RUN ? " (dry run)" : ""}`);
 }
 
+async function migrateAll() {
+  // TriviaCategory has a unique compound index, so we keep the safer per-doc approach there.
+  // (If both mythology and religion docs exist for the same subDomain, updateMany could collide.)
+  await migrateTriviaCategories();
+
+  // Other collections store category as a simple string field.
+  await updateTopLevelCategory(TriviaAttempt, "TriviaAttempt");
+  await updateTopLevelCategory(UserQuestionStats, "UserQuestionStats");
+  await updateTopLevelCategory(SchedulerMetadata, "SchedulerMetadata");
+
+  // UserActivity stores categories inside an array.
+  await updateUserActivityEmbeddedCategories();
+}
+
 async function run() {
   const uri = process.env.MONGO_URI || process.env.MONGO_URL;
   if (!uri) {
@@ -68,7 +119,7 @@ async function run() {
   log("MongoDB connected.");
 
   log("Starting migration stage: TriviaCategory");
-  await migrateTriviaCategories();
+  await migrateAll();
 
   await mongoose.disconnect();
   log("MongoDB disconnected.");
