@@ -138,6 +138,17 @@ router.post("/attempts", authMiddleware, validate(attemptSchema), async (req, re
 async function updateUserQuestionStats({ userId, questionId, category, subDomain, isCorrect, timeTakenMs, now }) {
   const historyEntry = { attemptedAt: now, isCorrect, timeTakenMs };
 
+  // Build the $set object conditionally based on isCorrect
+  const setUpdate = {
+    lastAttemptedAt: now,
+    category,
+    subDomain,
+    lastResultCorrect: isCorrect,
+  };
+  if (isCorrect) {
+    setUpdate.lastCorrectAt = now;
+  }
+
   // Step 1 — atomic upsert of counters, timestamps, and history
   const stats = await UserQuestionStats.findOneAndUpdate(
     { userId, questionId },
@@ -148,12 +159,7 @@ async function updateUserQuestionStats({ userId, questionId, category, subDomain
         incorrectCount: isCorrect ? 0 : 1,
       },
       $push: { attemptHistory: historyEntry },
-      $set: {
-        lastAttemptedAt: now,
-        category,
-        subDomain,
-        lastResultCorrect: isCorrect,
-      },
+      $set: setUpdate,
       $setOnInsert: { firstAttemptedAt: now },
     },
     { upsert: true, new: true }
