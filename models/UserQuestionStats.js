@@ -44,6 +44,7 @@ const UserQuestionStatsSchema = new mongoose.Schema({
   // Timestamps + rolling average
   firstAttemptedAt: { type: Date },
   lastAttemptedAt: { type: Date },
+  lastCorrectAt: { type: Date, default: null },
   avgTimeTakenMs: { type: Number, default: 0 },
 
   attemptHistory: [AttemptHistorySchema],
@@ -51,7 +52,12 @@ const UserQuestionStatsSchema = new mongoose.Schema({
 
 // Compound unique: one stats doc per user per question
 UserQuestionStatsSchema.index({ userId: 1, questionId: 1 }, { unique: true });
-// For per-user category queries
-UserQuestionStatsSchema.index({ userId: 1, category: 1 });
+
+// For per-user category/subDomain queries
+UserQuestionStatsSchema.index({ userId: 1, category: 1, subDomain: 1 });
+
+// Spaced-repetition session selection
+UserQuestionStatsSchema.index({ userId: 1, category: 1, subDomain: 1, incorrectCount: 1 });
+UserQuestionStatsSchema.index({ userId: 1, category: 1, subDomain: 1, correctCount: 1, lastCorrectAt: 1 });
 
 module.exports = mongoose.model("UserQuestionStats", UserQuestionStatsSchema);
