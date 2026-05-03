@@ -201,7 +201,10 @@ async function updateSeenAndMaybeSchedule({ questionId, category, subDomain, use
     },
     {
       $inc: { seen: 1 },
-      $set: { "questions.$.seenGlobally": true },
+      $set: { "questions.$[q].seenGlobally": true },
+    },
+    {
+      arrayFilters: [{ "q._id": questionId }],
     }
   );
 
