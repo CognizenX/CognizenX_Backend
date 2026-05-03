@@ -195,18 +195,20 @@ async function updateSeenAndMaybeSchedule({ questionId, category, subDomain, use
   // correct pattern because MongoDB forbids $ne in the main filter when using
   // the positional operator to update array elements.
   // modifiedCount === 0 means the question was already seen globally → skip.
+  // Step 1: Flip seenGlobally false → true only if not already true.
   const flip = await TriviaCategory.updateOne(
     { "questions._id": questionId },
     { $set: { "questions.$[q].seenGlobally": true } },
     { arrayFilters: [{ "q._id": questionId, "q.seenGlobally": { $ne: true } }] }
   );
 
-  if (flip.modifiedCount === 0) return; // Already seen globally — do not increment seen
+  if (flip.modifiedCount === 0) return; // Already seen globally — do not touch seen
 
-  // Step 2: Flag was just flipped for the first time — safe to increment seen.
+  // Step 2: Recompute seen from ground truth — count questions where seenGlobally
+  // is true. This avoids any counter drift or race condition from $inc.
   await TriviaCategory.updateOne(
     { "questions._id": questionId },
-    { $inc: { seen: 1 } }
+    [{ $set: { seen: { $size: { $filter: { input: "$questions", cond: { $eq: ["$$this.seenGlobally", true] } } } } } }]
   );
 
   // Re-fetch to get the updated seen count and total question count
