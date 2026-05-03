@@ -190,7 +190,9 @@ async function updateUserQuestionStats({ userId, questionId, category, subDomain
  */
 async function updateSeenAndMaybeSchedule({ questionId, category, subDomain, userId, now }) {
   // Only increment seen the first time the question is globally seen.
-  const updated = await TriviaCategory.updateOne(
+  // Step 1: Atomically flip seenGlobally false → true.
+  // findOneAndUpdate returns null if no document matched (already true → skip).
+  const flagged = await TriviaCategory.findOneAndUpdate(
     {
       questions: {
         $elemMatch: {
@@ -200,15 +202,21 @@ async function updateSeenAndMaybeSchedule({ questionId, category, subDomain, use
       },
     },
     {
-      $inc: { seen: 1 },
       $set: { "questions.$[q].seenGlobally": true },
     },
     {
       arrayFilters: [{ "q._id": questionId }],
+      new: false,
     }
   );
 
-  if (!updated.modifiedCount) return;
+  if (!flagged) return; // Already seen globally — do not increment seen
+
+  // Step 2: Flag was just flipped for the first time — safe to increment seen.
+  await TriviaCategory.updateOne(
+    { "questions._id": questionId },
+    { $inc: { seen: 1 } }
+  );
 
   // Re-fetch to get the updated seen count and total question count
   const updatedCategory = await TriviaCategory.findOne(
