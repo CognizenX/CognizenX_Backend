@@ -204,17 +204,21 @@ async function updateSeenAndMaybeSchedule({ questionId, category, subDomain, use
 
   if (flip.modifiedCount === 0) return; // Already seen globally — do not touch seen
 
-  // Step 2: Recompute seen from ground truth — count questions where seenGlobally
-  // is true. This avoids any counter drift or race condition from $inc.
-  await TriviaCategory.updateOne(
-    { "questions._id": questionId },
-    [{ $set: { seen: { $size: { $filter: { input: "$questions", cond: { $eq: ["$$this.seenGlobally", true] } } } } } }]
-  );
-
-  // Re-fetch to get the updated seen count and total question count
+  // Step 2: Fetch the document and count seenGlobally: true in JS.
+  // Plain JS count is unambiguous — avoids any Mongoose/MongoDB aggregation
+  // pipeline syntax issues with the array update operators.
   const updatedCategory = await TriviaCategory.findOne(
     { "questions._id": questionId },
     { seen: 1, questions: 1 }
+  );
+
+  if (!updatedCategory) return;
+
+  const correctSeen = updatedCategory.questions.filter(q => q.seenGlobally === true).length;
+
+  await TriviaCategory.updateOne(
+    { "questions._id": questionId },
+    { $set: { seen: correctSeen } }
   );
 
   if (!updatedCategory) return;
