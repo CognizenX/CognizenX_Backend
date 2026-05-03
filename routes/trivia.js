@@ -183,21 +183,22 @@ async function updateUserQuestionStats({ userId, questionId, category, subDomain
 }
 
 /**
- * If this is the first time this user has answered this question,
+ * If this is the first time any user has answered this question,
  * increments triviacategories.seen for that category document.
  * Then checks the seen ratio; if >= SEEN_THRESHOLD, upserts a
  * SchedulerMetadata record to signal that new questions are needed.
  */
 async function updateSeenAndMaybeSchedule({ questionId, category, subDomain, userId, now }) {
-  // A seen count of 1 means this is the very first attempt for this user+question.
-  const stats = await UserQuestionStats.findOne({ userId, questionId }, { attemptCount: 1 });
-  if (!stats || stats.attemptCount !== 1) return;
-
-  // First attempt for this user+question — increment seen on the category
-  await TriviaCategory.updateOne(
-    { "questions._id": questionId },
-    { $inc: { seen: 1 } }
+  // Only increment seen the first time the question is globally seen.
+  const updated = await TriviaCategory.updateOne(
+    { "questions._id": questionId, "questions.$.seenGlobally": { $ne: true } },
+    {
+      $inc: { seen: 1 },
+      $set: { "questions.$.seenGlobally": true },
+    }
   );
+
+  if (!updated.modifiedCount) return;
 
   // Re-fetch to get the updated seen count and total question count
   const updatedCategory = await TriviaCategory.findOne(

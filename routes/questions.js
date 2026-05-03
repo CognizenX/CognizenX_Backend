@@ -282,20 +282,47 @@ const handleWeeklyGeneration = async (req, res, next) => {
     console.log(`[CRON] Current week: ${metadata.weekNumber}, Next week: ${nextWeek}`);
     console.log(`[CRON] Total questions generated so far: ${metadata.totalQuestionsGenerated}`);
 
-    // Create simple generation plan: 10 questions per category/subDomain
-    const plan = [];
+    // Create generation plan:
+    // 1) If any category/subDomain has 0 questions, generate only for those.
+    // 2) Otherwise, run the full weekly plan as usual.
+    const emptyPlan = [];
+    const fullPlan = [];
+
     for (const category in categories) {
       for (const subDomain in categories[category]) {
-        plan.push({
+        fullPlan.push({
           category,
           subDomain,
           questionCount: QUESTION_GENERATION_COUNT,
           tier: 'standard'
         });
+
+        const existing = await TriviaCategory.findOne(
+          { category, subDomain },
+          { questions: 1 }
+        ).lean();
+
+        const totalQuestions = Array.isArray(existing?.questions)
+          ? existing.questions.length
+          : 0;
+
+        if (totalQuestions === 0) {
+          emptyPlan.push({
+            category,
+            subDomain,
+            questionCount: QUESTION_GENERATION_COUNT,
+            tier: 'empty'
+          });
+        }
       }
     }
 
+    const plan = emptyPlan.length > 0 ? emptyPlan : fullPlan;
+
     console.log(`[CRON] Generation plan: ${plan.length} categories to process`);
+    if (emptyPlan.length > 0) {
+      console.log(`[CRON] Using empty-category plan (${emptyPlan.length}) instead of full plan (${fullPlan.length})`);
+    }
     const totalPlanned = plan.reduce((sum, p) => sum + p.questionCount, 0);
     console.log(`[CRON] Total questions to generate: ${totalPlanned} (${QUESTION_GENERATION_COUNT} per category)`);
 

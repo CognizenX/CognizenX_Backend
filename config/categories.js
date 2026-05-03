@@ -46,6 +46,24 @@ const categories = {
   sports: {
     'Cricket': ['cricket', 'bat', 'ball', 'wicket', 'batsman', 'bowler', 'tournament'],
   },
+  art: {
+    'Western Art': ['western art', 'renaissance', 'baroque', 'impressionism', 'oil painting', 'gallery', 'museum'],
+    'Eastern Art': ['eastern art', 'calligraphy', 'ink painting', 'scroll', 'ceramic', 'temple art'],
+    'South Asian': ['south asian art', 'indian art', 'pakistani art', 'bangladeshi art', 'sri lankan art'],
+    'Architecture Sculpture': ['architecture', 'sculpture', 'monument', 'temple', 'palace', 'carving'],
+  },
+  culture: {
+    'Global Traditions': ['tradition', 'custom', 'heritage', 'ritual', 'folklore', 'culture'],
+    'South Asian': ['south asian culture', 'indian culture', 'pakistani culture', 'bangladeshi culture', 'sri lankan culture'],
+    'Festivals Rituals': ['festival', 'ritual', 'celebration', 'ceremony', 'procession', 'observance'],
+    'Performing Arts': ['dance', 'music', 'theatre', 'performance', 'classical dance', 'folk dance'],
+  },
+  cuisine: {
+    'World Cuisines': ['cuisine', 'food culture', 'regional dishes', 'traditional food', 'global cuisine'],
+    'South Asian': ['south asian cuisine', 'indian cuisine', 'pakistani cuisine', 'bangladeshi cuisine', 'sri lankan cuisine'],
+    'Street Foods': ['street food', 'snack', 'chaat', 'food stall', 'vendor', 'market food'],
+    'Spices Ingredients': ['spices', 'herbs', 'masala', 'ingredients', 'seasoning', 'flavor'],
+  },
   'current affairs': {
     'Economic Affairs': ['economy', 'budget', 'policy', 'investment', 'indian market'],
     'Infrastructure': ['infrastructure', 'development', 'roads', 'transportation', 'urban planning'],
