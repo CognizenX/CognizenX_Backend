@@ -191,7 +191,14 @@ async function updateUserQuestionStats({ userId, questionId, category, subDomain
 async function updateSeenAndMaybeSchedule({ questionId, category, subDomain, userId, now }) {
   // Only increment seen the first time the question is globally seen.
   const updated = await TriviaCategory.updateOne(
-    { "questions._id": questionId, "questions.$.seenGlobally": { $ne: true } },
+    {
+      questions: {
+        $elemMatch: {
+          _id: questionId,
+          seenGlobally: { $ne: true },
+        },
+      },
+    },
     {
       $inc: { seen: 1 },
       $set: { "questions.$.seenGlobally": true },
