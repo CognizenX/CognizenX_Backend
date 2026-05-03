@@ -189,44 +189,41 @@ async function updateUserQuestionStats({ userId, questionId, category, subDomain
  * SchedulerMetadata record to signal that new questions are needed.
  */
 async function updateSeenAndMaybeSchedule({ questionId, category, subDomain, userId, now }) {
-  // Only increment seen the first time the question is globally seen.
   // Step 1: Flip seenGlobally false → true only if not already true.
-  // The $ne condition is in arrayFilters (not the main query) — this is the
-  // correct pattern because MongoDB forbids $ne in the main filter when using
-  // the positional operator to update array elements.
-  // modifiedCount === 0 means the question was already seen globally → skip.
-  // Step 1: Flip seenGlobally false → true only if not already true.
+  // Uses arrayFilters so the $ne condition applies to the matched array element.
+  // If modifiedCount === 0, the flag was already true — nothing more to do.
   const flip = await TriviaCategory.updateOne(
     { "questions._id": questionId },
     { $set: { "questions.$[q].seenGlobally": true } },
     { arrayFilters: [{ "q._id": questionId, "q.seenGlobally": { $ne: true } }] }
   );
 
-  if (flip.modifiedCount === 0) return; // Already seen globally — do not touch seen
+  console.log(`[seen-v4] questionId=${questionId} modifiedCount=${flip.modifiedCount}`);
 
-  // Step 2: Fetch the document and count seenGlobally: true in JS.
-  // Plain JS count is unambiguous — avoids any Mongoose/MongoDB aggregation
-  // pipeline syntax issues with the array update operators.
-  const updatedCategory = await TriviaCategory.findOne(
+  if (flip.modifiedCount === 0) return;
+
+  // Step 2: Fetch the document AFTER the flip and compute the ratio from the
+  // live array in JS. No separate `seen` counter to maintain — ground truth
+  // is always the array itself.
+  const doc = await TriviaCategory.findOne(
     { "questions._id": questionId },
-    { seen: 1, questions: 1 }
+    { questions: 1 }
   );
 
-  if (!updatedCategory) return;
+  if (!doc) return;
 
-  const correctSeen = updatedCategory.questions.filter(q => q.seenGlobally === true).length;
-
-  await TriviaCategory.updateOne(
-    { "questions._id": questionId },
-    { $set: { seen: correctSeen } }
-  );
-
-  if (!updatedCategory) return;
-
-  const total = updatedCategory.questions.length;
+  const total = doc.questions.length;
   if (total === 0) return;
 
-  const seenRatio = updatedCategory.seen / total;
+  const seenCount = doc.questions.filter(q => q.seenGlobally === true).length;
+
+  // Keep `seen` in sync for any external tooling that reads it.
+  await TriviaCategory.updateOne(
+    { "questions._id": questionId },
+    { $set: { seen: seenCount } }
+  );
+
+  const seenRatio = seenCount / total;
   if (seenRatio < SEEN_THRESHOLD) return;
 
   // Seen ratio has crossed the threshold — record a scheduler trigger
