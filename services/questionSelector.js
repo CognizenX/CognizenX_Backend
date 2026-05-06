@@ -179,17 +179,20 @@ async function buildSession(userId, category, subDomain) {
 
   const picked = [];
   const pickedIdSet = new Set();
-  const addPicked = (q) => {
+  const sourceMap = {}; // Track which pool each question came from
+  
+  const addPicked = (q, source) => {
     if (!q || !q._id) return;
     const key = String(q._id);
     if (pickedIdSet.has(key)) return;
     pickedIdSet.add(key);
+    sourceMap[key] = source;
     picked.push(q);
   };
 
-  wrongQuestions.forEach(addPicked);
-  correctQuestions.forEach(addPicked);
-  unseenQuestions.forEach(addPicked);
+  wrongQuestions.forEach(q => addPicked(q, 'wrong'));
+  correctQuestions.forEach(q => addPicked(q, 'correct'));
+  unseenQuestions.forEach(q => addPicked(q, 'unseen'));
 
   // PAD FROM SEEN IF STILL SHORT
   const remainingNeeded = SESSION_SIZE - picked.length;
@@ -203,11 +206,26 @@ async function buildSession(userId, category, subDomain) {
       size: remainingNeeded,
     });
 
-    padQuestions.forEach(addPicked);
+    padQuestions.forEach(q => addPicked(q, 'pad'));
   }
 
   shuffleInPlace(picked);
-  return picked.slice(0, SESSION_SIZE);
+  
+  // Log selection details
+  const finalPicked = picked.slice(0, SESSION_SIZE);
+  const selectionLog = finalPicked.map(q => ({
+    questionId: String(q._id),
+    category,
+    subDomain,
+    source: sourceMap[String(q._id)] || 'unknown',
+  }));
+  
+  console.log(`[QuestionSelector] Session for user=${userId} category=${category}/${subDomain}:`);
+  selectionLog.forEach((log, idx) => {
+    console.log(`  [${idx + 1}/10] ${log.questionId} (${log.source})`);
+  });
+  
+  return finalPicked;
 }
 
 module.exports = {
