@@ -198,32 +198,23 @@ async function updateSeenAndMaybeSchedule({ questionId, category, subDomain, use
     { arrayFilters: [{ "q._id": questionId, "q.seenGlobally": { $ne: true } }] }
   );
 
-  console.log(`[seen-v4] questionId=${questionId} modifiedCount=${flip.modifiedCount}`);
-
+  // modifiedCount === 0 means seenGlobally was already true — skip seen increment.
+  // modifiedCount === 1 means flag was just flipped for the first time — safe to $inc.
   if (flip.modifiedCount === 0) return;
 
-  // Step 2: Fetch the document AFTER the flip and compute the ratio from the
-  // live array in JS. No separate `seen` counter to maintain — ground truth
-  // is always the array itself.
-  const doc = await TriviaCategory.findOne(
-    { "questions._id": questionId },
-    { questions: 1 }
-  );
-
-  if (!doc) return;
-
-  const total = doc.questions.length;
-  if (total === 0) return;
-
-  const seenCount = doc.questions.filter(q => q.seenGlobally === true).length;
-
-  // Keep `seen` in sync for any external tooling that reads it.
   await TriviaCategory.updateOne(
     { "questions._id": questionId },
-    { $set: { seen: seenCount } }
+    { $inc: { seen: 1 } }
   );
 
-  const seenRatio = seenCount / total;
+  const doc = await TriviaCategory.findOne(
+    { "questions._id": questionId },
+    { seen: 1, questions: 1 }
+  );
+
+  if (!doc || doc.questions.length === 0) return;
+
+  const seenRatio = doc.seen / doc.questions.length;
   if (seenRatio < SEEN_THRESHOLD) return;
 
   // Seen ratio has crossed the threshold — record a scheduler trigger

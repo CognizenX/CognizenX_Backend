@@ -56,6 +56,13 @@ const generateQuestions = async (category, subDomain, count = 10) => {
     // Add variety instruction to encourage different questions each time
     const varietyInstruction = `IMPORTANT: Generate DIVERSE and VARIED questions. Avoid repeating common or obvious questions. Think creatively about different aspects, time periods, players, tournaments, and records. Each question should be unique and cover different facets of ${subDomain || category}.`;
     
+    const artRegionFocus = isArtCategory && normalizedSubDomain
+      ? `REGION FOCUS: Because subDomain is "${subDomain}", every question must be about ${subDomain} art specifically. Do NOT include other regions.`
+      : '';
+    const artStrictness = isArtCategory
+      ? 'ART-ONLY RULE: Every question must be explicitly about visual art, artists, art movements, techniques, mediums, artworks, museums, or architecture/sculpture. Do NOT include general history/geography/politics/science or other non-art trivia.'
+      : '';
+
     const prompt = `Generate ${count} high-quality, relevant trivia questions about ${subDomain || category}.
     
     ${varietyInstruction}
@@ -75,6 +82,8 @@ const generateQuestions = async (category, subDomain, count = 10) => {
     6. Avoid overly obscure or trivial facts
     7. Focus on interesting, memorable information${isUniversalCategory ? ' about international cricket' : ' about India'}
     8. DIVERSITY: Cover different aspects, time periods, players, events, and records. Avoid generating similar questions to what might have been asked before.
+    ${artStrictness}
+    ${artRegionFocus}
     
     ${relevantTopics.length > 0 ? `SPECIFIC TOPICS TO COVER: ${relevantTopics.join(', ')}` : ''}
     
@@ -87,7 +96,9 @@ const generateQuestions = async (category, subDomain, count = 10) => {
         * Artists from different regions (Europe, Americas, Asia, Africa)
         * Major museums and landmarks (Louvre, MoMA, Uffizi, Tate)
         * Famous artworks and styles across cultures
-        * DO NOT focus only on Indian art - this must be truly international.`
+        * DO NOT focus only on Indian art - this must be truly international.
+        * Every question must clearly be art-related (artists, artworks, movements, techniques, museums, architecture/sculpture).
+        * If subDomain is provided (e.g., "Eastern Art", "Western Art", "South Asian"), all questions must stay within that region or tradition.`
       : `- If category is "politics" and subDomain is "national" or "National": Focus EXCLUSIVELY on Indian national politics, Indian government, Indian constitution, Indian Parliament, Indian Prime Ministers, Indian political parties. DO NOT include US politics, US government, or any non-Indian content.
     - If category is "geography" and subDomain is "North Indian": Focus on North Indian states, cities, geography within India
     - If category is "entertainment" and subDomain is "Bollywood": Focus on Indian cinema, actors, movies, music`
@@ -124,7 +135,7 @@ const generateQuestions = async (category, subDomain, count = 10) => {
         { 
           role: 'system', 
           content: isUniversalCategory
-            ? 'You are an expert trivia question generator specializing in creating relevant, accurate, and engaging questions for cognitive health applications. For art and sports categories marked as universal, you MUST generate UNIVERSAL/INTERNATIONAL questions covering global regions, movements, artists, teams, tournaments, records, and historical moments. Do NOT limit to Indian content only. IMPORTANT: Generate DIVERSE questions each time - vary regions, topics, and time periods. For all other categories, focus on Indian content. Focus on meaningful content that helps with memory and learning.'
+            ? 'You are an expert trivia question generator specializing in creating relevant, accurate, and engaging questions for cognitive health applications. For art and sports categories marked as universal, you MUST generate UNIVERSAL/INTERNATIONAL questions covering global regions, movements, artists, teams, tournaments, records, and historical moments. Do NOT limit to Indian content only. IMPORTANT: Generate DIVERSE questions each time - vary regions, topics, and time periods. For ART, every question must be explicitly art-related (artists, artworks, movements, techniques, mediums, museums, architecture/sculpture) and not general trivia.'
             : 'You are an expert trivia question generator specializing in creating relevant, accurate, and engaging questions for cognitive health applications. This application is specifically focused on Indian trivia content. ALL questions must be about India - Indian history, Indian politics, Indian geography, Indian culture, Indian entertainment, etc. Do NOT generate questions about US, UK, or any other country unless explicitly requested. IMPORTANT: Generate DIVERSE questions each time - vary topics, time periods, and aspects. Focus on meaningful content that helps with memory and learning.' 
         },
         { 
