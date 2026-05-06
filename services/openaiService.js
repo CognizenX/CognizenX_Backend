@@ -35,15 +35,34 @@ const generateQuestions = async (category, subDomain, count = 10) => {
     // IMPORTANT: This application is focused on Indian content. All questions should be about India unless explicitly stated otherwise.
     // EXCEPTION: Cricket and sports categories should be universal/international, not limited to India only.
     
-    // Check if this is a sports/cricket category that should be universal
-    // Cricket can be under entertainment.sports.cricket or just "cricket" or "sports"
-    const isSportsCategory = normalizedCategory === 'sports' || 
-                            normalizedCategory === 'entertainment' && (normalizedSubDomain === 'cricket' || normalizedSubDomain === 'sports' || normalizedSubDomain === 'othersports') ||
-                            normalizedSubDomain === 'cricket' || 
-                            normalizedSubDomain === 'sports' ||
-                            normalizedSubDomain === 'othersports';
-    
-    const isUniversalCategory = isSportsCategory;
+    const subdomainScope = {
+      // India-only
+      'bollywood movies': 'india',
+      'bollywood actors': 'india',
+      'bollywood songs': 'india',
+      'indian tv shows': 'india',
+      'national': 'india',
+      'north indian': 'india',
+      'south indian': 'india',
+      'ancient india': 'india',
+      'medieval india': 'india',
+      'modern india': 'india',
+      'freedom movement': 'india',
+
+      // Global
+      'western art': 'global',
+      'world cuisines': 'global',
+      'global traditions': 'global',
+
+      // Mixed / global-friendly
+      'cricket': 'global',
+      'performing arts': 'mixed',
+      'festivals rituals': 'mixed',
+    };
+    const scopeKey = String(subDomain || '').trim().toLowerCase();
+    const scope = subdomainScope[scopeKey] || 'india';
+    const isUniversalCategory = scope === 'global' || scope === 'mixed';
+    const isArtCategory = normalizedCategory === 'art';
     
     // Debug logging
     if (isUniversalCategory) {
@@ -53,42 +72,87 @@ const generateQuestions = async (category, subDomain, count = 10) => {
     // Add variety instruction to encourage different questions each time
     const varietyInstruction = `IMPORTANT: Generate DIVERSE and VARIED questions. Avoid repeating common or obvious questions. Think creatively about different aspects, time periods, players, tournaments, and records. Each question should be unique and cover different facets of ${subDomain || category}.`;
     
-    const prompt = `Generate ${count} high-quality, relevant trivia questions about ${subDomain || category}.
+    const scopeInstruction = {
+      india: `1. ALL questions MUST be strictly about India.
+- Do NOT include global or foreign content.
+- Focus only on Indian people, places, history, culture, or events.`,
+      global: `1. Questions MUST be GLOBAL and NOT India-focused.
+- Do NOT bias toward India.
+- Focus on internationally recognized people, movements, or facts.`,
+      mixed: `1. Questions can include both Indian and global content.
+- Maintain a BALANCE (not all India, not all global).`,
+    };
+
+    const extraRules = {
+      'western art': `- ONLY include Western artists, movements, or works (e.g., Leonardo da Vinci, Van Gogh, Picasso, Renaissance, Impressionism).
+- Do NOT include Indian artists or Indo-Western fusion.`,
+    };
+    const extraRuleText = extraRules[scopeKey] || '';
+
+    const artRegionFocus = isArtCategory && normalizedSubDomain
+      ? `REGION FOCUS: Because subDomain is "${subDomain}", every question must be about ${subDomain} art specifically. Do NOT include other regions or general South Asian topics.`
+      : '';
+    const artStrictness = isArtCategory
+      ? 'ABSOLUTE RULE (HARD CONSTRAINT): If the question is NOT about VISUAL ART, DO NOT generate it. South Asian does NOT mean general culture. ONLY include painters, artworks, sculptures, architecture, art movements, techniques, styles, museums.'
+      : '';
+    const domainLock = {
+      art: `DOMAIN LOCK: ART ONLY
+    - Every question MUST be about VISUAL ART ONLY.
+    - Allowed topics: artists, paintings, sculptures, art movements, techniques, styles, museums, architecture, materials.
+    - NOT allowed: sports, politics, geography, literature, religion, general history unless directly related to art.
+    - If a question is not clearly about ART, it is INVALID.`,
+      sports: `DOMAIN LOCK: SPORTS ONLY
+    - Every question MUST be about sports, players, tournaments, or records.
+    - NOT allowed: art, politics, literature, geography unless directly related to sports.`,
+        };
+
+    const prompt = `Generate ${count} high-quality, relevant trivia questions.
+    
+    Category: ${category}
+    Subcategory: ${subDomain || 'General'}
     
     ${varietyInstruction}
     
     CRITICAL REQUIREMENTS:
-    ${isUniversalCategory 
-      ? `1. Questions MUST be about UNIVERSAL/INTERNATIONAL ${subDomain || category} - This is CRITICAL. Include questions about cricket from ALL countries (India, Australia, England, West Indies, Pakistan, South Africa, New Zealand, Sri Lanka, Bangladesh, Afghanistan, etc.), international tournaments (ICC World Cup, Ashes, IPL, T20 World Cup, Champions Trophy, etc.), and global cricket history, records, and players from ALL nations. Do NOT limit to Indian cricket only - this should be truly international cricket trivia.`
-      : `1. ALL QUESTIONS MUST BE ABOUT INDIA - This is an Indian trivia application. Do NOT generate questions about US, UK, or any other country unless explicitly specified.`
-    }
-    ${isUniversalCategory
-      ? `2. Questions MUST be specifically about ${subDomain || category} from a global/international perspective - include players, teams, tournaments, and records from all cricket-playing nations. VARY the countries, players, and tournaments you ask about - don't repeat the same topics.`
-      : `2. Questions MUST be specifically about ${subDomain || category} in the context of India - not generic knowledge. VARY the topics, time periods, and aspects you cover.`
-    }
-    3. All questions should be factually accurate and educational
-    4. Questions should vary in difficulty (easy, medium, hard) - mix different difficulty levels
-    5. Options should be plausible and related to the topic
-    6. Avoid overly obscure or trivial facts
-    7. Focus on interesting, memorable information${isUniversalCategory ? ' about international cricket' : ' about India'}
-    8. DIVERSITY: Cover different aspects, time periods, players, events, and records. Avoid generating similar questions to what might have been asked before.
-    
-    ${relevantTopics.length > 0 ? `SPECIFIC TOPICS TO COVER: ${relevantTopics.join(', ')}` : ''}
-    
+    ${scopeInstruction[scope] || scopeInstruction.india}
+
+    2. STRICT SUBCATEGORY FOCUS
+    - Only generate questions about "${subDomain || category}"
+    - Do NOT drift into other subcategories
+
+    3. TOPIC ENFORCEMENT (MANDATORY)
+    - Every question MUST clearly match at least ONE of the following topics.
+    - If it does not match, DO NOT generate it.
+    ${relevantTopics.length > 0 ? relevantTopics.map(t => `- ${t}`).join('\n') : '- Use the category and subcategory context to choose appropriate topics.'}
+
+    4. ACCURACY
+    - No hallucinations
+    - Use widely known facts only
+
+    5. CLARITY
+    - Simple language for elderly users
+
+    ${domainLock[normalizedCategory] || ''}
+    ${artStrictness}
+    ${artRegionFocus}
+    ${extraRuleText}
+
+    NEGATIVE CONSTRAINTS:
+    - Do NOT include questions about:
+      * Sports (unless category is sports)
+      * Geography (unless category is geography)
+      * Literature (unless category is literature)
+      * Politics (unless category is politics)
+    - If a question includes unrelated domain knowledge, it is INVALID.
+
+    FINAL CHECK BEFORE OUTPUT:
+    For EACH question:
+    - Check: Is this strictly about "${subDomain || category}"?
+    - Check: Does it match one of the allowed topics?
+    - Check: Is it in the correct domain (${category})?
+    If ANY answer is NO -> DO NOT include the question.
+
     ${exampleQuestions.length > 0 ? `EXAMPLE QUESTIONS FOR REFERENCE: ${exampleQuestions.join(' | ')}` : ''}
-    
-    CONTEXT-SPECIFIC EXAMPLES:
-    ${isUniversalCategory
-      ? `- If category is "entertainment" or "sports" and subDomain is "cricket": This is UNIVERSAL/INTERNATIONAL cricket trivia. Generate questions about:
-        * Players from ALL countries: Sachin Tendulkar (India), Don Bradman (Australia), Brian Lara (West Indies), Wasim Akram (Pakistan), Jacques Kallis (South Africa), etc.
-        * International tournaments: ICC World Cup, Ashes Series, T20 World Cup, Champions Trophy, IPL, Big Bash League, etc.
-        * Records and achievements from all cricket-playing nations
-        * Historical moments from global cricket history
-        * DO NOT focus only on Indian cricket - this must be truly international cricket trivia covering all major cricket nations and tournaments.`
-      : `- If category is "politics" and subDomain is "national" or "National": Focus EXCLUSIVELY on Indian national politics, Indian government, Indian constitution, Indian Parliament, Indian Prime Ministers, Indian political parties. DO NOT include US politics, US government, or any non-Indian content.
-    - If category is "geography" and subDomain is "North Indian": Focus on North Indian states, cities, geography within India
-    - If category is "entertainment" and subDomain is "Bollywood": Focus on Indian cinema, actors, movies, music`
-    }
     
     QUESTION QUALITY GUIDELINES:
     - Questions should test understanding, not just memorization
@@ -118,11 +182,13 @@ const generateQuestions = async (category, subDomain, count = 10) => {
     const completion = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: [
-        { 
-          role: 'system', 
-          content: isUniversalCategory
-            ? 'You are an expert trivia question generator specializing in creating relevant, accurate, and engaging questions for cognitive health applications. For cricket and sports categories, you MUST generate UNIVERSAL/INTERNATIONAL questions covering ALL cricket-playing nations (India, Australia, England, West Indies, Pakistan, South Africa, New Zealand, Sri Lanka, Bangladesh, Afghanistan, etc.), international tournaments (ICC World Cup, Ashes, IPL, T20 World Cup, Champions Trophy, etc.), and global cricket history, records, and players from ALL nations. Do NOT limit to Indian cricket only - this must be truly international cricket trivia. IMPORTANT: Generate DIVERSE questions each time - vary countries, players, tournaments, and time periods. For all other categories, focus on Indian content. Focus on meaningful content that helps with memory and learning.'
-            : 'You are an expert trivia question generator specializing in creating relevant, accurate, and engaging questions for cognitive health applications. This application is specifically focused on Indian trivia content. ALL questions must be about India - Indian history, Indian politics, Indian geography, Indian culture, Indian entertainment, etc. Do NOT generate questions about US, UK, or any other country unless explicitly requested. IMPORTANT: Generate DIVERSE questions each time - vary topics, time periods, and aspects. Focus on meaningful content that helps with memory and learning.' 
+        {
+          role: 'system',
+          content: scope === 'global'
+            ? 'You are an expert trivia question generator specializing in creating relevant, accurate, and engaging questions for cognitive health applications. Generate GLOBAL questions with no India bias. Focus on internationally recognized people, movements, events, and facts. IMPORTANT: Generate DIVERSE questions each time - vary regions, topics, and time periods.'
+            : scope === 'mixed'
+              ? 'You are an expert trivia question generator specializing in creating relevant, accurate, and engaging questions for cognitive health applications. Questions may include both Indian and global content; keep a balanced mix. IMPORTANT: Generate DIVERSE questions each time - vary regions, topics, and time periods.'
+              : 'You are an expert trivia question generator specializing in creating relevant, accurate, and engaging questions for cognitive health applications. This application is specifically focused on Indian trivia content. ALL questions must be about India - Indian history, Indian politics, Indian geography, Indian culture, Indian entertainment, etc. Do NOT generate questions about US, UK, or any other country unless explicitly requested. IMPORTANT: Generate DIVERSE questions each time - vary topics, time periods, and aspects. Focus on meaningful content that helps with memory and learning.'
         },
         { 
           role: 'user', 
@@ -198,13 +264,53 @@ const generateQuestions = async (category, subDomain, count = 10) => {
       
       return true;
     });
+
+    const artKeywords = [
+      'art', 'artist', 'artists', 'painting', 'paintings', 'painter', 'sculpture',
+      'sculptor', 'museum', 'gallery', 'canvas', 'fresco', 'mural', 'portrait',
+      'landscape', 'abstract', 'impressionism', 'renaissance', 'baroque',
+      'modernism', 'surrealism', 'cubism', 'calligraphy', 'miniature',
+      'architecture', 'temple', 'monument', 'design', 'style', 'movement',
+      'atelier', 'printmaking', 'engraving', 'etching', 'iconography', 'school of art'
+    ];
+    const sportsKeywords = [
+      'cricket', 'cricketer', 'football', 'soccer', 'tennis', 'hockey', 'basketball',
+      'olympics', 'world cup', 'tournament', 'match', 'league', 'score',
+      'goal', 'wicket', 'bat', 'bowler', 'batsman', 'player', 'athlete'
+    ];
+
+    function containsAny(text, keywords) {
+      return keywords.some(k => text.includes(k));
+    }
+
+    const domainFilteredQuestions = validatedQuestions.filter(q => {
+      const text = String(q.question || '').toLowerCase();
+
+      if (normalizedCategory === 'art') {
+        if (!containsAny(text, artKeywords)) return false;
+        if (containsAny(text, sportsKeywords)) return false;
+      }
+
+      if (normalizedCategory === 'sports') {
+        if (!containsAny(text, sportsKeywords)) return false;
+      }
+
+      return true;
+    });
+
+    if (normalizedCategory === 'art') {
+      const minKeep = Math.max(3, Math.floor(count * 0.6));
+      if (domainFilteredQuestions.length < minKeep) {
+        throw new Error('Too many invalid art questions generated - retry');
+      }
+    }
     
-    if (validatedQuestions.length === 0) {
+    if (domainFilteredQuestions.length === 0) {
       throw new Error('No valid questions generated. Please try again.');
     }
     
-    console.log(`Generated ${validatedQuestions.length} valid questions for ${category}/${subDomain}`);
-    return validatedQuestions;
+    console.log(`Generated ${domainFilteredQuestions.length} valid questions for ${category}/${subDomain}`);
+    return domainFilteredQuestions;
     
   } catch (error) {
     console.error('OpenAI API Error:', error);
