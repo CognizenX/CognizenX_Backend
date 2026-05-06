@@ -28,7 +28,7 @@ const categories = {
     'National Parks': ['national park', 'wildlife sanctuary', 'forest reserve', 'nature park'],
     'Libraries and Statues': ['indian library', 'statue', 'monument', 'historical site'],
   },
-  generalKnowledge: {
+  generalknowledge: {
     'Economy': ['indian economy', 'gdp', 'inflation', 'stock market', 'trade', 'finance'],
     'Festivals': ['festival', 'celebration', 'diwali', 'holi', 'eid', 'indian tradition'],
     'Literature': ['literature', 'books', 'author', 'poet', 'novel', 'indian writer'],
