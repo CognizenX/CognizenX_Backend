@@ -1,4 +1,9 @@
 const express = require("express");
+const Joi = require("joi");
+
+const authMiddleware = require("../middleware/auth");
+const { validate } = require("../middleware/validate");
+
 const TriviaCategory = require("../models/TriviaCategory");
 const {
   formatQuestion,
@@ -9,6 +14,7 @@ const { generateQuestions } = require("../services/openaiService");
 const { runWeeklyGeneration, QUESTION_GENERATION_COUNT } = require("../services/questionScheduler");
 const { categories } = require("../config/categories");
 const { normalizeLegacyCategory } = require("../utils/categoryNormalizer");
+const QuestionSelector = require("../services/questionSelector");
 
 function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -49,6 +55,37 @@ function buildSubDomainQuery(subDomain) {
 const { sendCronAlert } = require("../services/mailer");
 
 const router = express.Router();
+
+const sessionQuerySchema = Joi.object({
+  category: Joi.string().min(1).max(200).required(),
+  subDomain: Joi.string().min(1).max(200).required(),
+});
+
+async function buildSessionHandler(req, res, next) {
+  try {
+    const { category, subDomain } = req.query;
+
+    // Normalize legacy category/subDomain values
+    const normalized = normalizeLegacyCategory(category, subDomain);
+    const normalizedCategory = normalized.category;
+    const normalizedSubDomain = normalized.subDomain;
+
+    const questions = await QuestionSelector.buildSession(
+      req.user._id,
+      normalizedCategory,
+      normalizedSubDomain
+    );
+
+    console.log(`[API] Session returned ${questions.length} questions for ${normalizedCategory}/${normalizedSubDomain}`);
+
+    return res.json({
+      status: "success",
+      questions,
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
 
 // POST /api/add-questions - Add questions manually
 router.post("/add-questions", async (req, res, next) => {
@@ -133,6 +170,14 @@ router.get("/questions", async (req, res, next) => {
     next(error);
   }
 });
+
+// GET /api/questions/session - Spaced repetition session selection
+router.get(
+  "/questions/session",
+  authMiddleware,
+  validate(sessionQuerySchema, "query"),
+  buildSessionHandler
+);
 
 // GET /api/random-questions - Get random questions from the saved bank
 router.get("/random-questions", async (req, res, next) => {
@@ -382,5 +427,8 @@ const handleWeeklyGeneration = async (req, res, next) => {
 
 router.get("/internal/generate-weekly-questions", handleWeeklyGeneration);
 router.post("/internal/generate-weekly-questions", handleWeeklyGeneration);
+
+router.buildSessionHandler = buildSessionHandler;
+router.sessionQuerySchema = sessionQuerySchema;
 
 module.exports = router;
