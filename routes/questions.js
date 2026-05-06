@@ -179,32 +179,70 @@ router.get(
   buildSessionHandler
 );
 
-// GET /api/random-questions - Get random questions from the saved bank
+// GET /api/random-questions - Get random/spaced-rep questions
+// Auto-detects authenticated users with stats and uses spaced-rep if available
 router.get("/random-questions", async (req, res, next) => {
   const { categories, subDomain } = req.query;
+  const isAuthenticated = req.user && req.user._id;
 
   if (!categories) {
     return res.status(400).json({ message: 'Categories are required.' });
   }
 
   const categoryList = categories.split(',');
-
   const normalizedQuery = normalizeLegacyCategory(null, subDomain);
   const normalizedSubDomain = normalizedQuery.subDomain;
+  const normalizedCategory = categoryList[0]; // Primary category
 
-  function matchesSubDomain(questionSubDomain) {
-    const q = String(questionSubDomain || '').trim().toLowerCase();
-    const requested = String(normalizedSubDomain || '').trim().toLowerCase();
+  // Try spaced-rep if authenticated
+  if (isAuthenticated && normalizedCategory && normalizedSubDomain) {
+    try {
+      const UserQuestionStats = require("../models/UserQuestionStats");
+      
+      // Check if user has stats for this category/subDomain
+      const hasStats = await UserQuestionStats.findOne({
+        userId: req.user._id,
+        category: normalizedCategory,
+        subDomain: normalizedSubDomain,
+      });
 
-    if (!requested) return true;
-    if (q === requested) return true;
+      if (hasStats) {
+        const spacedRepQuestions = await QuestionSelector.buildSession(
+          req.user._id,
+          normalizedCategory,
+          normalizedSubDomain
+        );
 
-    // Legacy support: "Other Mythologies" was folded into "Sikhism".
-    if (requested === 'sikhism' && q === 'other mythologies') return true;
-    return false;
+        const compatibleQuestions = spacedRepQuestions.map(normaliseForResponse);
+        console.log(`[random-questions] Served ${compatibleQuestions.length} spaced-rep questions for ${normalizedCategory}/${normalizedSubDomain}`);
+        
+        return res.json({
+          questions: compatibleQuestions,
+          totalAvailable: compatibleQuestions.length,
+          generated: 0,
+          source: 'spaced-rep',
+        });
+      }
+    } catch (spacedRepErr) {
+      console.error("[random-questions] Spaced-rep fallback error:", spacedRepErr);
+      // Fall through to random selection below
+    }
   }
 
+  // Fallback to random selection from bank
   try {
+    function matchesSubDomain(questionSubDomain) {
+      const q = String(questionSubDomain || '').trim().toLowerCase();
+      const requested = String(normalizedSubDomain || '').trim().toLowerCase();
+
+      if (!requested) return true;
+      if (q === requested) return true;
+
+      // Legacy support: "Other Mythologies" was folded into "Sikhism".
+      if (requested === 'sikhism' && q === 'other mythologies') return true;
+      return false;
+    }
+
     let savedQuestions = [];
     
     // For each category, get saved questions from the bank
@@ -264,7 +302,7 @@ router.get("/random-questions", async (req, res, next) => {
 
     // Note: Activity logging is handled by frontend calling POST /api/log-activity
     console.log(
-      `Served ${compatibleQuestions.length} questions from bank for categories: ${categoryList.join(', ')}`
+      `[random-questions] Served ${compatibleQuestions.length} random questions from bank for categories: ${categoryList.join(', ')}`
     );
     
     res.json({ 
@@ -274,7 +312,7 @@ router.get("/random-questions", async (req, res, next) => {
       source: 'bank',
     });
   } catch (error) {
-    console.error('Error fetching random questions:', error);
+    console.error('[random-questions] Error fetching random questions:', error);
     next(error);
   }
 });
