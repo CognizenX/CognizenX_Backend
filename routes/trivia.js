@@ -220,10 +220,17 @@ async function updateSeenAndMaybeSchedule({ questionId, category, subDomain, use
   // Seen ratio has crossed the threshold — record a scheduler trigger
   const weekNumber = getISOWeekNumber(now);
   await SchedulerMetadata.findOneAndUpdate(
-    { category, subDomain, weekNumber },
+    { metadataType: "categorySignal", category, subDomain, weekNumber },
     {
       $set: { lastRunAt: now },
-      $setOnInsert: { createdAt: now, totalQuestionsGenerated: 0 },
+      $setOnInsert: {
+        metadataType: "categorySignal",
+        category,
+        subDomain,
+        weekNumber,
+        createdAt: now,
+        totalQuestionsGenerated: 0,
+      },
     },
     { upsert: true }
   );

@@ -4,8 +4,6 @@ const app = require("../app");
 const User = require("../models/User");
 const TriviaCategory = require("../models/TriviaCategory");
 
-require("./setup");
-
 describe("Trivia attempts + daily metrics", () => {
   test("records an attempt and aggregates daily metrics", async () => {
     const sessionToken = "test-token";

@@ -193,11 +193,12 @@ async function generateQuestionsForCategory(category, subDomain, retries = 3) {
  */
 async function getSchedulerMetadata() {
   try {
-    let metadata = await SchedulerMetadata.findOne({});
+    let metadata = await SchedulerMetadata.findOne({ metadataType: "global" });
 
     if (!metadata) {
       // First run: create metadata document
       metadata = new SchedulerMetadata({
+        metadataType: "global",
         weekNumber: 0,
         totalQuestionsGenerated: 0,
         lastRunAt: null,
@@ -224,10 +225,10 @@ async function getSchedulerMetadata() {
  */
 async function updateSchedulerMetadata(totalQuestionsGenerated = 0) {
   try {
-    let metadata = await SchedulerMetadata.findOne({});
+    let metadata = await SchedulerMetadata.findOne({ metadataType: "global" });
 
     if (!metadata) {
-      metadata = new SchedulerMetadata();
+      metadata = new SchedulerMetadata({ metadataType: "global" });
     }
 
     // Increment week number (first run = week 1, second run = week 2, etc.)
