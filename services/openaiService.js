@@ -1,9 +1,7 @@
 const OpenAI = require('openai');
 const { getRelevantTopics, getExampleQuestions } = require('../services/questionTemplates');
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let openaiClient = null;
 
 function makeHttpError(status, message, code) {
   const err = new Error(message);
@@ -14,14 +12,25 @@ function makeHttpError(status, message, code) {
   return err;
 }
 
+function getOpenAIClient() {
+  if (!process.env.OPENAI_API_KEY ||
+      process.env.OPENAI_API_KEY === 'sk-your-openai-api-key-here' ||
+      process.env.OPENAI_API_KEY.trim().length < 20) {
+    throw new Error('OpenAI API key is not configured. Please set OPENAI_API_KEY in your .env file.');
+  }
+
+  if (!openaiClient) {
+    openaiClient = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+
+  return openaiClient;
+}
+
 const generateQuestions = async (category, subDomain, count = 10) => {
   try {
-    // Check if OpenAI API key is configured and valid
-    if (!process.env.OPENAI_API_KEY || 
-        process.env.OPENAI_API_KEY === 'sk-your-openai-api-key-here' ||
-        process.env.OPENAI_API_KEY.trim().length < 20) {
-      throw new Error('OpenAI API key is not configured. Please set OPENAI_API_KEY in your .env file.');
-    }
+    const openai = getOpenAIClient();
     
     // Normalize category and subDomain to lowercase for template matching
     const normalizedCategory = category?.toLowerCase();
@@ -231,12 +240,7 @@ const generateQuestions = async (category, subDomain, count = 10) => {
 
 const generateExplanation = async (question, userAnswer, correctAnswer) => {
   try {
-    // Check if OpenAI API key is configured and valid
-    if (!process.env.OPENAI_API_KEY || 
-        process.env.OPENAI_API_KEY === 'sk-your-openai-api-key-here' ||
-        process.env.OPENAI_API_KEY.trim().length < 20) {
-      throw new Error('OpenAI API key is not configured. Please set OPENAI_API_KEY in your .env file.');
-    }
+    const openai = getOpenAIClient();
     
     const prompt = `Question: "${question}"
 User answered: "${userAnswer}"
