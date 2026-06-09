@@ -88,6 +88,92 @@ const questionTemplates = {
     },
   },
   
+  religion: {
+    Islam: {
+      topics: [
+        'Five Pillars of Islam',
+        'Quran and Hadith',
+        'Prophet Muhammad and early Islam',
+        'Indian Muslim heritage and culture',
+        'Mosques and Islamic architecture in India',
+        'Ramadan, Eid, and Islamic festivals',
+        'Sufi traditions in India',
+      ],
+      examples: [
+        'Which holy book is central to Islam?',
+        'What is the name of the Islamic month of fasting?',
+        'Which city is home to the Jama Masjid in Delhi?',
+      ],
+    },
+    Christianity: {
+      topics: [
+        'Bible and Gospels',
+        'Life and teachings of Jesus',
+        'Christianity in India',
+        'Churches and Christian festivals in India',
+        'Apostles and early church history',
+        'Christmas and Easter traditions',
+      ],
+      examples: [
+        'Which book is sacred to Christians?',
+        'On which day do Christians celebrate the resurrection of Jesus?',
+        'In which Indian state is the Basilica of Bom Jesus located?',
+      ],
+    },
+    Sikhism: {
+      topics: [
+        'Guru Granth Sahib',
+        'Ten Sikh Gurus',
+        'Golden Temple and gurdwaras',
+        'Khalsa and Five Ks',
+        'Sikh festivals such as Vaisakhi and Gurpurab',
+        'Sikh history in Punjab and India',
+      ],
+      examples: [
+        'Which scripture is central to Sikhism?',
+        'Where is the Golden Temple located?',
+        'Who founded the Khalsa?',
+      ],
+    },
+    Buddhism: {
+      topics: [
+        'Life and teachings of Buddha',
+        'Four Noble Truths and Eightfold Path',
+        'Buddhist sites in India',
+        'Ashoka and spread of Buddhism',
+        'Monasteries, stupas, and sangha',
+        'Bodh Gaya and Sarnath',
+      ],
+      examples: [
+        'Under which tree did Siddhartha Gautama attain enlightenment?',
+        'What are the Four Noble Truths associated with?',
+        'Which Indian emperor helped spread Buddhism?',
+      ],
+    },
+    Jainism: {
+      topics: [
+        'Tirthankaras and Mahavira',
+        'Ahimsa and Jain philosophy',
+        'Jain temples and pilgrimage sites in India',
+        'Digambara and Svetambara traditions',
+        'Jain festivals and rituals',
+      ],
+      examples: [
+        'Who is considered the 24th Tirthankara in Jainism?',
+        'Which principle of non-violence is central to Jainism?',
+        'Where is the famous Jain temple complex at Palitana located?',
+      ],
+    },
+    Hindu: {
+      topics: [
+        'Vedas and Upanishads',
+        'Ramayana and Mahabharata',
+        'Major Hindu deities and festivals',
+        'Temples and pilgrimage sites in India',
+      ],
+    },
+  },
+
   history: {
     'Ancient India': {
       topics: [
@@ -110,14 +196,25 @@ const questionTemplates = {
   }
 };
 
+function findSubDomainData(categoryData, subDomain) {
+  if (!categoryData || !subDomain) return null;
+  if (categoryData[subDomain]) return categoryData[subDomain];
+
+  const key = String(subDomain).trim().toLowerCase();
+  const match = Object.keys(categoryData).find(
+    (entry) => entry.toLowerCase() === key
+  );
+  return match ? categoryData[match] : null;
+}
+
 // Get relevant topics for a category and subdomain
 const getRelevantTopics = (category, subDomain) => {
   const categoryData = questionTemplates[category];
   if (!categoryData) return [];
-  
-  const subDomainData = categoryData[subDomain];
+
+  const subDomainData = findSubDomainData(categoryData, subDomain);
   if (!subDomainData) return [];
-  
+
   return subDomainData.topics || [];
 };
 
@@ -125,10 +222,10 @@ const getRelevantTopics = (category, subDomain) => {
 const getExampleQuestions = (category, subDomain) => {
   const categoryData = questionTemplates[category];
   if (!categoryData) return [];
-  
-  const subDomainData = categoryData[subDomain];
+
+  const subDomainData = findSubDomainData(categoryData, subDomain);
   if (!subDomainData) return [];
-  
+
   return subDomainData.examples || [];
 };
 

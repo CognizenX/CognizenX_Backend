@@ -58,6 +58,10 @@ const QuestionSchema = new mongoose.Schema({
     type: Date,
     required: false,
   },
+  embedding: {
+    type: [Number],
+    required: false,
+  },
 });
 
 // Define the schema for trivia categories and associated questions

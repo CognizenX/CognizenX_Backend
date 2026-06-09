@@ -43,24 +43,27 @@ describe("taxonomy normalization", () => {
 
   it("builds category aliases query for religion/mythology", () => {
     const query = buildCategoryOnlyQuery("mythology");
-    expect(query).toEqual({
-      category: { $in: ["religion", "mythology"] },
-    });
+    expect(query.category.$in).toHaveLength(2);
+    expect(query.category.$in.map((entry) => entry.source)).toEqual(
+      expect.arrayContaining(["^religion$", "^mythology$"])
+    );
   });
 
   it("builds subDomain aliases query for other mythologies mapped to Sikhism", () => {
     const query = buildCategorySubDomainQuery("mythology", "Other Mythologies");
 
-    expect(query.category.$in).toEqual(expect.arrayContaining(["religion", "mythology"]));
-    expect(query.subDomain.$in).toEqual(
+    expect(query.category.$in.map((entry) => entry.source)).toEqual(
+      expect.arrayContaining(["^religion$", "^mythology$"])
+    );
+    expect(query.subDomain.$in.map((entry) => entry.source)).toEqual(
       expect.arrayContaining([
-        "sikhism",
-        "Sikhism",
-        "sikh",
-        "other mythology",
-        "Other Mythologies",
-        "others mythology",
-        "others mythologies",
+        "^Sikhism$",
+        "^sikhism$",
+        "^sikh$",
+        "^other mythology$",
+        "^Other Mythologies$",
+        "^others mythology$",
+        "^others mythologies$",
       ])
     );
   });

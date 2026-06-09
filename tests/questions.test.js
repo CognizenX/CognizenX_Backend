@@ -114,3 +114,27 @@ describe("GET /api/questions", () => {
     expect(res.body.message).toMatch(/required parameters/i);
   });
 });
+
+describe("GET /api/random-questions", () => {
+  it("should not fall back to another religion subdomain when the requested one is empty", async () => {
+    await Trivia.create({
+      category: "religion",
+      subDomain: "Hindu",
+      questions: [
+        {
+          question: "Who is known as the preserver in the Hindu trinity?",
+          options: ["Brahma", "Vishnu", "Shiva", "Indra"],
+          correctAnswer: "Vishnu",
+        },
+      ],
+    });
+
+    const res = await request(app)
+      .get("/api/random-questions")
+      .query({ categories: "religion", subDomain: "Islam" });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.questions).toEqual([]);
+    expect(res.body.totalAvailable).toBe(0);
+  });
+});

@@ -3,20 +3,23 @@
  *
  * What it does:
  * 1) Rebuilds triviacategories docs for category mythology/religion into canonical religion subdomains
- * 2) Normalizes category/subDomain in triviaattempts, userquestionstats, schedulermetadatas
- * 3) Normalizes useractivities.categories[] (category + domain)
+ * 2) Ensures all 6 canonical religion subdomain documents exist (empty if no questions)
+ * 3) Exports unclassified questions for manual review (no auto-fallback assignment)
+ * 4) Normalizes category/subDomain in triviaattempts, userquestionstats, schedulermetadatas
+ * 5) Normalizes useractivities.categories[] (category + domain)
  *
  * Usage:
- *   node scripts/migrate-mythology-to-religion.js --dry-run
- *   node scripts/migrate-mythology-to-religion.js
- *   node scripts/migrate-mythology-to-religion.js --fallback-subdomain=jainism
- *   node scripts/migrate-mythology-to-religion.js --ai-model=gpt-4o-mini
+ *   node scripts/migrate-mythology-to-religion.js --dry-run --no-ai
  *   node scripts/migrate-mythology-to-religion.js --no-ai
  */
 
 require("dotenv").config();
+const fs = require("fs");
+const path = require("path");
 const mongoose = require("mongoose");
 const OpenAI = require("openai");
+const { categories } = require("../config/categories");
+const { normaliseTaxonomyInput, normaliseSubDomain } = require("../utils/taxonomy");
 const TriviaCategory = require("../models/TriviaCategory");
 const TriviaAttempt = require("../models/TriviaAttempt");
 const UserQuestionStats = require("../models/UserQuestionStats");
@@ -26,23 +29,18 @@ const UserActivity = require("../models/UserActivity");
 const args = process.argv.slice(2);
 const DRY_RUN = args.includes("--dry-run");
 const AI_DISABLED = args.includes("--no-ai");
-const FALLBACK_SUBDOMAIN_ARG = args.find((a) => a.startsWith("--fallback-subdomain="));
-const FALLBACK_SUBDOMAIN = (FALLBACK_SUBDOMAIN_ARG
-  ? FALLBACK_SUBDOMAIN_ARG.split("=")[1]
-  : "jainism").trim().toLowerCase();
 const AI_MODEL_ARG = args.find((a) => a.startsWith("--ai-model="));
 const AI_MODEL = (AI_MODEL_ARG ? AI_MODEL_ARG.split("=")[1] : "gpt-4o-mini").trim();
 const START_TS = Date.now();
 const PROGRESS_EVERY_DOCS = 10;
 const PROGRESS_EVERY_QUESTIONS = 50;
 
-const ALLOWED_RELIGION_SUBDOMAINS = ["hindu", "islam", "christianity", "sikhism", "buddhism", "jainism"];
+const CANONICAL_RELIGION_SUBDOMAINS = Object.keys(categories.religion || {});
+const CANONICAL_RELIGION_KEYS = CANONICAL_RELIGION_SUBDOMAINS.map((s) => s.toLowerCase());
 
 const hasApiKey = Boolean(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim().length > 20);
 const AI_ENABLED = !AI_DISABLED && hasApiKey;
-const openai = AI_ENABLED
-  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  : null;
+const openai = AI_ENABLED ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 const aiClassificationCache = new Map();
 
 const RELIGION_SUBDOMAIN_ALIASES = {
@@ -92,27 +90,30 @@ function log(message) {
   console.log(`[MIGRATE +${elapsedSec}s] ${message}`);
 }
 
+function toCanonicalSubDomain(key) {
+  const normalized = normaliseSubDomain(key, "religion");
+  if (normalized && CANONICAL_RELIGION_SUBDOMAINS.includes(normalized)) {
+    return normalized;
+  }
+  const idx = CANONICAL_RELIGION_KEYS.indexOf(toKey(key));
+  return idx >= 0 ? CANONICAL_RELIGION_SUBDOMAINS[idx] : null;
+}
+
 function canonicalCategory(category) {
-  const key = toKey(category);
-  if (key === "mythology") return "religion";
-  return key;
+  return normaliseTaxonomyInput({ category }).category || "religion";
 }
 
 function mapKnownReligionSubDomain(input) {
   const key = toKey(input);
   if (!key) return null;
 
-  for (const [canonical, aliases] of Object.entries(RELIGION_SUBDOMAIN_ALIASES)) {
+  for (const [canonicalKey, aliases] of Object.entries(RELIGION_SUBDOMAIN_ALIASES)) {
     if (aliases.includes(key)) {
-      return canonical;
+      return toCanonicalSubDomain(canonicalKey);
     }
   }
 
-  if (OTHER_MYTHOLOGIES_ALIASES.has(key)) {
-    return null;
-  }
-
-  return null;
+  return toCanonicalSubDomain(input);
 }
 
 function classifyReligionFromText(text) {
@@ -135,7 +136,7 @@ function classifyReligionFromText(text) {
     }
   }
 
-  return bestScore > 0 ? bestCategory : null;
+  return bestScore > 0 ? toCanonicalSubDomain(bestCategory) : null;
 }
 
 function questionToText(question) {
@@ -155,6 +156,20 @@ function isOtherMythologies(value) {
   return OTHER_MYTHOLOGIES_ALIASES.has(toKey(value));
 }
 
+function ensureReportsDir() {
+  const reportsDir = path.join(__dirname, "..", "reports");
+  fs.mkdirSync(reportsDir, { recursive: true });
+  return reportsDir;
+}
+
+function writeJsonReport(filename, payload) {
+  const reportsDir = ensureReportsDir();
+  const filePath = path.join(reportsDir, filename);
+  fs.writeFileSync(filePath, JSON.stringify(payload, null, 2));
+  log(`Wrote report: ${filePath}`);
+  return filePath;
+}
+
 async function classifyReligionWithAI(question) {
   if (!AI_ENABLED || !question) {
     return null;
@@ -172,15 +187,12 @@ async function classifyReligionWithAI(question) {
 
   const prompt = [
     "Classify this trivia question into exactly one religion subdomain.",
-    `Allowed labels: ${ALLOWED_RELIGION_SUBDOMAINS.join(", ")}`,
-    "Respond with ONLY valid JSON like:",
-    '{"subDomain":"hindu"}',
-    "If uncertain, choose the closest label from allowed labels.",
+    `Allowed labels: ${CANONICAL_RELIGION_KEYS.join(", ")}`,
+    'Respond with ONLY valid JSON like: {"subDomain":"hindu"}',
     `Question content: ${text}`,
   ].join("\n");
 
   try {
-    log("AI classify: sending question to model...");
     const completion = await openai.chat.completions.create({
       model: AI_MODEL,
       temperature: 0,
@@ -191,23 +203,17 @@ async function classifyReligionWithAI(question) {
           role: "system",
           content: "You are a strict taxonomy classifier. Return only JSON with a single key subDomain.",
         },
-        {
-          role: "user",
-          content: prompt,
-        },
+        { role: "user", content: prompt },
       ],
     });
 
     const content = completion.choices?.[0]?.message?.content?.trim();
     const parsed = JSON.parse(content || "{}");
-    const candidate = toKey(parsed.subDomain);
-    const normalized = ALLOWED_RELIGION_SUBDOMAINS.includes(candidate) ? candidate : null;
-
+    const normalized = toCanonicalSubDomain(parsed.subDomain);
     aiClassificationCache.set(cacheKey, normalized);
-    log(`AI classify: result=${normalized || "null"}`);
     return normalized;
   } catch (error) {
-    console.warn("AI classification failed; falling back to keyword/default strategy:", error.message);
+    console.warn("AI classification failed:", error.message);
     aiClassificationCache.set(cacheKey, null);
     return null;
   }
@@ -225,7 +231,7 @@ async function resolveReligionSubDomain({ sourceSubDomain, question }) {
   const fromQuestion = classifyReligionFromText(questionToText(question));
   if (fromQuestion) return { subDomain: fromQuestion, reason: "question-keywords" };
 
-  return { subDomain: FALLBACK_SUBDOMAIN, reason: "fallback" };
+  return { subDomain: null, reason: "unclassified" };
 }
 
 function dedupeQuestionsPreserveIds(questions) {
@@ -259,6 +265,26 @@ function dedupeQuestionsPreserveIds(questions) {
   return unique;
 }
 
+function ensureAllCanonicalSubdomains(targetDocs) {
+  const bySubDomain = new Map(targetDocs.map((doc) => [doc.subDomain, doc]));
+
+  for (const subDomain of CANONICAL_RELIGION_SUBDOMAINS) {
+    if (!bySubDomain.has(subDomain)) {
+      const emptyDoc = {
+        category: "religion",
+        subDomain,
+        questions: [],
+        seen: 0,
+        createdAt: new Date(),
+      };
+      targetDocs.push(emptyDoc);
+      bySubDomain.set(subDomain, emptyDoc);
+    }
+  }
+
+  return targetDocs.sort((a, b) => a.subDomain.localeCompare(b.subDomain));
+}
+
 async function migrateTriviaCategories() {
   log("Loading source TriviaCategory documents...");
   const sourceDocs = await TriviaCategory.find({
@@ -266,12 +292,19 @@ async function migrateTriviaCategories() {
   }).lean();
   log(`Loaded ${sourceDocs.length} source TriviaCategory document(s).`);
 
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  writeJsonReport(`religion-migration-backup-${timestamp}.json`, {
+    timestamp: new Date().toISOString(),
+    sourceDocs,
+  });
+
   const aggregates = new Map();
+  const unclassifiedQuestions = [];
   let totalQuestions = 0;
-  let fallbackRouted = 0;
   let aiRouted = 0;
   let keywordRouted = 0;
   let aliasRouted = 0;
+  let unclassifiedRouted = 0;
   let processedDocs = 0;
   let processedQuestions = 0;
 
@@ -290,24 +323,10 @@ async function migrateTriviaCategories() {
     totalQuestions += questions.length;
 
     if (questions.length === 0) {
-      const resolved = await resolveReligionSubDomain({ sourceSubDomain: doc.subDomain, question: null });
-      const key = `${category}::${resolved.subDomain}`;
-      if (!aggregates.has(key)) {
-        aggregates.set(key, {
-          category,
-          subDomain: resolved.subDomain,
-          questions: [],
-          seenSum: 0,
-          createdAt: doc.createdAt || new Date(),
-        });
-      }
-      const target = aggregates.get(key);
-      target.seenSum += Number(doc.seen || 0);
-      if (doc.createdAt && new Date(doc.createdAt) < new Date(target.createdAt)) {
-        target.createdAt = doc.createdAt;
-      }
       continue;
     }
+
+    const docRouting = new Map();
 
     for (const question of questions) {
       processedQuestions += 1;
@@ -320,17 +339,20 @@ async function migrateTriviaCategories() {
         question,
       });
 
-      if (resolved.reason === "alias") {
-        aliasRouted += 1;
-      }
-      if (resolved.reason === "ai") {
-        aiRouted += 1;
-      }
-      if (resolved.reason === "question-keywords") {
-        keywordRouted += 1;
-      }
-      if (resolved.reason === "fallback") {
-        fallbackRouted += 1;
+      if (resolved.reason === "alias") aliasRouted += 1;
+      if (resolved.reason === "ai") aiRouted += 1;
+      if (resolved.reason === "question-keywords") keywordRouted += 1;
+      if (resolved.reason === "unclassified") {
+        unclassifiedRouted += 1;
+        unclassifiedQuestions.push({
+          sourceCategory: doc.category,
+          sourceSubDomain: doc.subDomain,
+          questionId: question?._id ? String(question._id) : null,
+          question: question?.question,
+          options: question?.options,
+          correct_answer: question?.correct_answer || question?.correctAnswer,
+        });
+        continue;
       }
 
       const key = `${category}::${resolved.subDomain}`;
@@ -345,25 +367,34 @@ async function migrateTriviaCategories() {
       }
 
       const target = aggregates.get(key);
-      const clonedQuestion = {
+      target.questions.push({
         ...question,
         subDomain: resolved.subDomain,
-      };
-      target.questions.push(clonedQuestion);
+      });
+      docRouting.set(resolved.subDomain, (docRouting.get(resolved.subDomain) || 0) + 1);
 
       if (doc.createdAt && new Date(doc.createdAt) < new Date(target.createdAt)) {
         target.createdAt = doc.createdAt;
       }
     }
 
-    const sourceResolved = await resolveReligionSubDomain({ sourceSubDomain: doc.subDomain, question: null });
-    const sourceKey = `${category}::${sourceResolved.subDomain}`;
-    if (aggregates.has(sourceKey)) {
-      aggregates.get(sourceKey).seenSum += Number(doc.seen || 0);
+    let primarySubDomain = null;
+    let primaryCount = 0;
+    for (const [subDomain, count] of docRouting) {
+      if (count > primaryCount) {
+        primaryCount = count;
+        primarySubDomain = subDomain;
+      }
+    }
+    if (primarySubDomain) {
+      const primaryKey = `${category}::${primarySubDomain}`;
+      if (aggregates.has(primaryKey)) {
+        aggregates.get(primaryKey).seenSum += Number(doc.seen || 0);
+      }
     }
   }
 
-  const targetDocs = Array.from(aggregates.values()).map((entry) => {
+  let targetDocs = Array.from(aggregates.values()).map((entry) => {
     const uniqueQuestions = dedupeQuestionsPreserveIds(entry.questions);
     const seen = Math.min(uniqueQuestions.length, Math.max(0, Number(entry.seenSum || 0)));
     return {
@@ -375,6 +406,26 @@ async function migrateTriviaCategories() {
     };
   });
 
+  targetDocs = ensureAllCanonicalSubdomains(targetDocs);
+
+  const reportPath = writeJsonReport(`religion-redistribution-${timestamp}.json`, {
+    timestamp: new Date().toISOString(),
+    dryRun: DRY_RUN,
+    summary: {
+      sourceDocs: sourceDocs.length,
+      sourceQuestions: totalQuestions,
+      targetDocs: targetDocs.length,
+      aliasRouted,
+      aiRouted,
+      keywordRouted,
+      unclassifiedRouted,
+      perSubDomain: Object.fromEntries(
+        targetDocs.map((doc) => [doc.subDomain, doc.questions.length])
+      ),
+    },
+    unclassifiedQuestions,
+  });
+
   console.log("\n=== TriviaCategory Migration Summary ===");
   console.log(`Source docs: ${sourceDocs.length}`);
   console.log(`Source questions: ${totalQuestions}`);
@@ -382,7 +433,8 @@ async function migrateTriviaCategories() {
   console.log(`Alias-routed questions: ${aliasRouted}`);
   console.log(`AI-routed questions: ${aiRouted}`);
   console.log(`Keyword-routed questions: ${keywordRouted}`);
-  console.log(`Fallback-routed questions: ${fallbackRouted}`);
+  console.log(`Unclassified questions: ${unclassifiedRouted}`);
+  console.log(`Unclassified report: ${reportPath}`);
 
   for (const doc of targetDocs) {
     console.log(` - religion/${doc.subDomain}: ${doc.questions.length} questions`);
@@ -390,7 +442,6 @@ async function migrateTriviaCategories() {
 
   if (DRY_RUN) {
     console.log("[DRY RUN] No writes performed for triviacategories.");
-    log("Dry run mode active: skipping TriviaCategory writes.");
     return;
   }
 
@@ -407,9 +458,9 @@ async function migrateTriviaCategories() {
   console.log("TriviaCategory migration applied.");
 }
 
-function normalizeSubDomainWithoutQuestion(subDomain) {
-  const known = mapKnownReligionSubDomain(subDomain);
-  return known || FALLBACK_SUBDOMAIN;
+function normalizeSubDomainForRecord(subDomain) {
+  const normalized = normaliseTaxonomyInput({ category: "religion", subDomain }).subDomain;
+  return normalized || subDomain;
 }
 
 async function migrateSimpleCollection(Model, label) {
@@ -421,7 +472,7 @@ async function migrateSimpleCollection(Model, label) {
   let changed = 0;
   for (const doc of docs) {
     const nextCategory = canonicalCategory(doc.category);
-    const nextSubDomain = normalizeSubDomainWithoutQuestion(doc.subDomain);
+    const nextSubDomain = normalizeSubDomainForRecord(doc.subDomain);
 
     if (doc.category !== nextCategory || doc.subDomain !== nextSubDomain) {
       doc.category = nextCategory;
@@ -448,8 +499,12 @@ async function migrateUserActivities() {
   for (const doc of docs) {
     let docChanged = false;
     for (const item of doc.categories || []) {
-      const nextCategory = canonicalCategory(item.category);
-      const nextDomain = normalizeSubDomainWithoutQuestion(item.domain);
+      const normalized = normaliseTaxonomyInput({
+        category: item.category,
+        domain: item.domain,
+      });
+      const nextCategory = normalized.category;
+      const nextDomain = normalized.subDomain;
 
       if (item.category !== nextCategory || item.domain !== nextDomain) {
         item.category = nextCategory;
@@ -478,10 +533,10 @@ async function run() {
   }
 
   console.log(`Running mythology->religion migration${DRY_RUN ? " [DRY RUN]" : ""}`);
-  console.log(`Fallback subDomain for unclassified records: ${FALLBACK_SUBDOMAIN}`);
   console.log(
-    `AI classification for 'Other Mythologies': ${AI_ENABLED ? `enabled (${AI_MODEL})` : "disabled (missing API key or --no-ai flag)"}`
+    `AI classification: ${AI_ENABLED ? `enabled (${AI_MODEL})` : "disabled (--no-ai or missing API key)"}`
   );
+  console.log(`Canonical religion subdomains: ${CANONICAL_RELIGION_SUBDOMAINS.join(", ")}`);
 
   log("Connecting to MongoDB...");
   await mongoose.connect(uri);

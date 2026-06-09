@@ -14,7 +14,8 @@ function makeHttpError(status, message, code) {
   return err;
 }
 
-const generateQuestions = async (category, subDomain, count = 10) => {
+const generateQuestions = async (category, subDomain, count = 10, options = {}) => {
+  const { avoidTopics = [] } = options;
   try {
     // Check if OpenAI API key is configured and valid
     if (!process.env.OPENAI_API_KEY || 
@@ -44,6 +45,7 @@ const generateQuestions = async (category, subDomain, count = 10) => {
                             normalizedSubDomain === 'othersports';
     
     const isUniversalCategory = isSportsCategory;
+    const isReligionCategory = normalizedCategory === 'religion';
     
     // Debug logging
     if (isUniversalCategory) {
@@ -76,6 +78,8 @@ const generateQuestions = async (category, subDomain, count = 10) => {
     ${relevantTopics.length > 0 ? `SPECIFIC TOPICS TO COVER: ${relevantTopics.join(', ')}` : ''}
     
     ${exampleQuestions.length > 0 ? `EXAMPLE QUESTIONS FOR REFERENCE: ${exampleQuestions.join(' | ')}` : ''}
+    ${avoidTopics.length > 0 ? `AVOID GENERATING QUESTIONS SIMILAR TO THESE RECENT REJECTED TOPICS: ${avoidTopics.join(' | ')}` : ''}
+    ${isReligionCategory ? `RELIGION CONTEXT: Questions must be specifically about ${subDomain || category}. Where applicable, include Indian religious history, sites, festivals, and figures alongside global faith knowledge.` : ''}
     
     CONTEXT-SPECIFIC EXAMPLES:
     ${isUniversalCategory

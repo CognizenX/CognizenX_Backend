@@ -11,7 +11,8 @@
 const TriviaCategory = require('../models/TriviaCategory');
 const SchedulerMetadata = require('../models/SchedulerMetadata');
 const { generateQuestions, generateExplanation } = require('./openaiService');
-const { formatQuestions, deduplicateAgainst } = require('../utils/questionFormatter');
+const { formatQuestions } = require('../utils/questionFormatter');
+const { ingestQuestions } = require('./questionIngestion');
 const { buildCategorySubDomainQuery } = require('../utils/taxonomy');
 
 const QUESTION_GENERATION_COUNT = 10; 
@@ -130,27 +131,28 @@ async function generateQuestionsForCategory(category, domain, retries = 3) {
         console.log(`[GENERATOR] Created new category document for ${category}/${domain}`);
       }
 
-      // Check for duplicates
-      const { unique, addedCount, duplicateCount } = deduplicateAgainst(
-        formattedQuestions,
-        triviaCategory.questions,
-        `${category}/${domain}`
-      );
+      const ingestResult = await ingestQuestions({
+        category,
+        subDomain: domain,
+        candidates: formattedQuestions,
+        existingQuestions: triviaCategory.questions,
+        logPrefix: `${category}/${domain}`,
+      });
 
-      // Add new questions and save to MongoDB
-      triviaCategory.questions.push(...unique);
+      triviaCategory.questions.push(...ingestResult.accepted);
       await triviaCategory.save();
 
       console.log(
-        `[GENERATOR] SUCCESS: Added ${addedCount} questions (${duplicateCount} duplicates skipped) for "${category}/${domain}"`
+        `[GENERATOR] SUCCESS: Added ${ingestResult.addedCount} questions (${ingestResult.exactDuplicateCount} exact, ${ingestResult.semanticDuplicateCount} semantic duplicates skipped) for "${category}/${domain}"`
       );
 
-      // Return success summary with the generated questions
       return {
         success: true,
-        questionsGenerated: addedCount,
-        duplicates: duplicateCount,
-        questions: unique,  // Include the actual questions for logging/review
+        questionsGenerated: ingestResult.addedCount,
+        duplicates: ingestResult.duplicateCount,
+        exactDuplicates: ingestResult.exactDuplicateCount,
+        semanticDuplicates: ingestResult.semanticDuplicateCount,
+        questions: ingestResult.accepted,
       };
     } catch (error) {
       lastError = error;

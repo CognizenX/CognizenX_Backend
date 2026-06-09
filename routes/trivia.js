@@ -9,6 +9,7 @@ const TriviaCategory = require("../models/TriviaCategory");
 const TriviaAttempt = require("../models/TriviaAttempt");
 const UserQuestionStats = require("../models/UserQuestionStats");
 const SchedulerMetadata = require("../models/SchedulerMetadata");
+const { normaliseTaxonomyInput } = require("../utils/taxonomy");
 
 const router = express.Router();
 
@@ -77,11 +78,16 @@ router.post("/attempts", authMiddleware, validate(attemptSchema), async (req, re
     const isCorrect = selected.toLowerCase() === correctAnswer.toLowerCase();
     const now = new Date();
 
+    const normalizedTaxonomy = normaliseTaxonomyInput({
+      category: triviaDoc.category,
+      subDomain: triviaDoc.subDomain,
+    });
+
     const attempt = await TriviaAttempt.create({
       userId: req.user._id,
       questionId: qid,
-      category: triviaDoc.category,
-      subDomain: triviaDoc.subDomain,
+      category: normalizedTaxonomy.category,
+      subDomain: normalizedTaxonomy.subDomain,
       selectedAnswer: selected,
       isCorrect,
       timeTakenMs,
@@ -95,8 +101,8 @@ router.post("/attempts", authMiddleware, validate(attemptSchema), async (req, re
       await updateUserQuestionStats({
         userId: req.user._id,
         questionId: qid,
-        category: triviaDoc.category,
-        subDomain: triviaDoc.subDomain,
+        category: normalizedTaxonomy.category,
+        subDomain: normalizedTaxonomy.subDomain,
         isCorrect,
         timeTakenMs,
         now,
@@ -104,8 +110,8 @@ router.post("/attempts", authMiddleware, validate(attemptSchema), async (req, re
 
       await updateSeenAndMaybeSchedule({
         questionId: qid,
-        category: triviaDoc.category,
-        subDomain: triviaDoc.subDomain,
+        category: normalizedTaxonomy.category,
+        subDomain: normalizedTaxonomy.subDomain,
         userId: req.user._id,
         now,
       });
@@ -222,7 +228,8 @@ async function updateSeenAndMaybeSchedule({ questionId, category, subDomain, use
 // GET /api/trivia/metrics/daily
 router.get("/metrics/daily", authMiddleware, validate(metricsQuerySchema, "query"), async (req, res, next) => {
   try {
-    const { days, category, subDomain } = req.query;
+    const { days } = req.query;
+    const normalized = normaliseTaxonomyInput(req.query);
 
     const now = new Date();
     const start = addDaysUTC(now, -Number(days) + 1);
@@ -233,8 +240,8 @@ router.get("/metrics/daily", authMiddleware, validate(metricsQuerySchema, "query
       attemptedAt: { $gte: start },
     };
 
-    if (category) match.category = category;
-    if (subDomain) match.subDomain = subDomain;
+    if (normalized.category) match.category = normalized.category;
+    if (normalized.subDomain) match.subDomain = normalized.subDomain;
 
     const rows = await TriviaAttempt.aggregate([
       { $match: match },

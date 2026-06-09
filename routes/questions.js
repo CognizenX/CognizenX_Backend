@@ -2,9 +2,9 @@ const express = require("express");
 const TriviaCategory = require("../models/TriviaCategory");
 const {
   formatQuestion,
-  deduplicateAgainst,
   normaliseForResponse,
 } = require("../utils/questionFormatter");
+const { ingestQuestions } = require("../services/questionIngestion");
 const { generateQuestions } = require("../services/openaiService");
 const { runWeeklyGeneration, QUESTION_GENERATION_COUNT } = require("../services/questionScheduler");
 const { categories } = require("../config/categories");
@@ -43,14 +43,18 @@ router.post("/add-questions", async (req, res, next) => {
     const formatted = questions.map((q) =>
       formatQuestion(q, { subDomain: normaliseSubDomain(q.subDomain || subDomain, category) })
     );
-    const { unique, addedCount, duplicateCount } = deduplicateAgainst(
-      formatted,
-      triviaCategory.questions,
-      '/api/add-questions'
-    );
-    triviaCategory.questions.push(...unique);
+    const ingestResult = await ingestQuestions({
+      category,
+      subDomain,
+      candidates: formatted,
+      existingQuestions: triviaCategory.questions,
+      logPrefix: '/api/add-questions',
+    });
+    triviaCategory.questions.push(...ingestResult.accepted);
 
-    console.log(`Added ${addedCount} new questions, skipped ${duplicateCount} duplicates`);
+    console.log(
+      `Added ${ingestResult.addedCount} new questions, skipped ${ingestResult.exactDuplicateCount} exact and ${ingestResult.semanticDuplicateCount} semantic duplicates`
+    );
 
     await triviaCategory.save();
 
@@ -120,15 +124,7 @@ router.get("/random-questions", async (req, res, next) => {
         ? buildCategorySubDomainQuery(category, subDomain)
         : buildCategoryOnlyQuery(category);
 
-      let triviaCategory = await TriviaCategory.findOne(query);
-
-      // Fall back to any document for this category if the specific subDomain has no questions
-      if (!triviaCategory || triviaCategory.questions.length === 0) {
-        const anyCategoryQuestions = await TriviaCategory.findOne(buildCategoryOnlyQuery(category));
-        if (anyCategoryQuestions && anyCategoryQuestions.questions.length > 0) {
-          triviaCategory = anyCategoryQuestions;
-        }
-      }
+      const triviaCategory = await TriviaCategory.findOne(query);
 
       if (triviaCategory && triviaCategory.questions.length > 0) {
         let categorySavedQuestions = [];
@@ -228,20 +224,45 @@ const handleWeeklyGeneration = async (req, res, next) => {
     console.log(`[CRON] Current week: ${metadata.weekNumber}, Next week: ${nextWeek}`);
     console.log(`[CRON] Total questions generated so far: ${metadata.totalQuestionsGenerated}`);
 
-    // Create simple generation plan: 10 questions per category/domain
-    const plan = [];
+    // Create generation plan: prioritize empty category/subDomain pairs, else full weekly plan
+    const emptyPlan = [];
+    const fullPlan = [];
+
     for (const category in categories) {
-      for (const domain in categories[category]) {
-        plan.push({
+      for (const subDomain in categories[category]) {
+        fullPlan.push({
           category,
-          domain,
+          domain: subDomain,
           questionCount: QUESTION_GENERATION_COUNT,
-          tier: 'standard'
+          tier: 'standard',
         });
+
+        const existing = await TriviaCategory.findOne(
+          buildCategorySubDomainQuery(category, subDomain),
+          { questions: 1 }
+        ).lean();
+
+        const totalQuestions = Array.isArray(existing?.questions)
+          ? existing.questions.length
+          : 0;
+
+        if (totalQuestions === 0) {
+          emptyPlan.push({
+            category,
+            domain: subDomain,
+            questionCount: QUESTION_GENERATION_COUNT,
+            tier: 'empty',
+          });
+        }
       }
     }
 
+    const plan = emptyPlan.length > 0 ? emptyPlan : fullPlan;
+
     console.log(`[CRON] Generation plan: ${plan.length} categories to process`);
+    if (emptyPlan.length > 0) {
+      console.log(`[CRON] Using empty-category plan (${emptyPlan.length}) instead of full plan (${fullPlan.length})`);
+    }
     const totalPlanned = plan.reduce((sum, p) => sum + p.questionCount, 0);
     console.log(`[CRON] Total questions to generate: ${totalPlanned} (${QUESTION_GENERATION_COUNT} per category)`);
 

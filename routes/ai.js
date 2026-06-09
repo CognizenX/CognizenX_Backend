@@ -1,6 +1,7 @@
 const express = require("express");
 const TriviaCategory = require("../models/TriviaCategory");
-const { formatQuestions, deduplicateAgainst } = require("../utils/questionFormatter");
+const { formatQuestions } = require("../utils/questionFormatter");
+const { ingestQuestions } = require("../services/questionIngestion");
 const { generateQuestions, generateExplanation } = require("../services/openaiService");
 const { normaliseTaxonomyInput, buildCategorySubDomainQuery } = require("../utils/taxonomy");
 const authMiddleware = require("../middleware/auth");
@@ -59,21 +60,27 @@ router.post("/generate-questions", authMiddleware, async (req, res, next) => {
       aiGenerated: true,
     });
     
-    // Add new questions to the database (avoid duplicates by checking question text)
-    const { unique, addedCount, duplicateCount } = deduplicateAgainst(
-      formattedQuestions,
-      triviaCategory.questions,
-      '/api/ai/generate-questions'
-    );
-    triviaCategory.questions.push(...unique);
-    
+    const ingestResult = await ingestQuestions({
+      category,
+      subDomain,
+      candidates: formattedQuestions,
+      existingQuestions: triviaCategory.questions,
+      logPrefix: '/api/generate-questions',
+    });
+
+    triviaCategory.questions.push(...ingestResult.accepted);
     await triviaCategory.save();
-    console.log(`Generated questions: ${addedCount} added, ${duplicateCount} duplicates skipped`);
-    
-    res.json({ 
-      status: "success", 
-      message: `Generated ${formattedQuestions.length} questions`,
-      questions: formattedQuestions
+    console.log(
+      `Generated questions: ${ingestResult.addedCount} added, ${ingestResult.exactDuplicateCount} exact duplicates, ${ingestResult.semanticDuplicateCount} semantic duplicates skipped`
+    );
+
+    res.json({
+      status: "success",
+      message: `Generated ${ingestResult.addedCount} questions`,
+      questions: ingestResult.accepted,
+      duplicates: ingestResult.duplicateCount,
+      exactDuplicates: ingestResult.exactDuplicateCount,
+      semanticDuplicates: ingestResult.semanticDuplicateCount,
     });
   } catch (error) {
     console.error('Error generating questions:', error);
