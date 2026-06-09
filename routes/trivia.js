@@ -4,13 +4,12 @@ const mongoose = require("mongoose");
 
 const authMiddleware = require("../middleware/auth");
 const { validate } = require("../middleware/validate");
+const { normalizeLegacyCategory } = require("../utils/categoryNormalizer");
 
 const TriviaCategory = require("../models/TriviaCategory");
 const TriviaAttempt = require("../models/TriviaAttempt");
 const UserQuestionStats = require("../models/UserQuestionStats");
 const SchedulerMetadata = require("../models/SchedulerMetadata");
-const { normaliseTaxonomyInput } = require("../utils/taxonomy");
-
 const router = express.Router();
 
 // Fraction of a category's questions that must have been seen before
@@ -67,6 +66,11 @@ router.post("/attempts", authMiddleware, validate(attemptSchema), async (req, re
       return res.status(404).json({ message: "Question not found" });
     }
 
+    // Normalize legacy category/subDomain values
+    const normalized = normalizeLegacyCategory(triviaDoc.category, triviaDoc.subDomain);
+    const normalizedCategory = normalized.category;
+    const normalizedSubDomain = normalized.subDomain;
+
     const question = triviaDoc.questions[0];
     const correctAnswer = normaliseAnswer(question.correctAnswer || question.correct_answer);
 
@@ -78,16 +82,11 @@ router.post("/attempts", authMiddleware, validate(attemptSchema), async (req, re
     const isCorrect = selected.toLowerCase() === correctAnswer.toLowerCase();
     const now = new Date();
 
-    const normalizedTaxonomy = normaliseTaxonomyInput({
-      category: triviaDoc.category,
-      subDomain: triviaDoc.subDomain,
-    });
-
     const attempt = await TriviaAttempt.create({
       userId: req.user._id,
       questionId: qid,
-      category: normalizedTaxonomy.category,
-      subDomain: normalizedTaxonomy.subDomain,
+      category: normalizedCategory,
+      subDomain: normalizedSubDomain,
       selectedAnswer: selected,
       isCorrect,
       timeTakenMs,
@@ -101,8 +100,8 @@ router.post("/attempts", authMiddleware, validate(attemptSchema), async (req, re
       await updateUserQuestionStats({
         userId: req.user._id,
         questionId: qid,
-        category: normalizedTaxonomy.category,
-        subDomain: normalizedTaxonomy.subDomain,
+        category: normalizedCategory,
+        subDomain: normalizedSubDomain,
         isCorrect,
         timeTakenMs,
         now,
@@ -110,8 +109,8 @@ router.post("/attempts", authMiddleware, validate(attemptSchema), async (req, re
 
       await updateSeenAndMaybeSchedule({
         questionId: qid,
-        category: normalizedTaxonomy.category,
-        subDomain: normalizedTaxonomy.subDomain,
+        category: normalizedCategory,
+        subDomain: normalizedSubDomain,
         userId: req.user._id,
         now,
       });
@@ -183,43 +182,54 @@ async function updateUserQuestionStats({ userId, questionId, category, subDomain
 }
 
 /**
- * If this is the first time this user has answered this question,
+ * If this is the first time any user has answered this question,
  * increments triviacategories.seen for that category document.
  * Then checks the seen ratio; if >= SEEN_THRESHOLD, upserts a
  * SchedulerMetadata record to signal that new questions are needed.
  */
 async function updateSeenAndMaybeSchedule({ questionId, category, subDomain, userId, now }) {
-  // A seen count of 1 means this is the very first attempt for this user+question.
-  const stats = await UserQuestionStats.findOne({ userId, questionId }, { attemptCount: 1 });
-  if (!stats || stats.attemptCount !== 1) return;
+  // Step 1: Flip seenGlobally false → true only if not already true.
+  // Uses arrayFilters so the $ne condition applies to the matched array element.
+  // If modifiedCount === 0, the flag was already true — nothing more to do.
+  const flip = await TriviaCategory.updateOne(
+    { "questions._id": questionId },
+    { $set: { "questions.$[q].seenGlobally": true } },
+    { arrayFilters: [{ "q._id": questionId, "q.seenGlobally": { $ne: true } }] }
+  );
 
-  // First attempt for this user+question — increment seen on the category
+  // modifiedCount === 0 means seenGlobally was already true — skip seen increment.
+  // modifiedCount === 1 means flag was just flipped for the first time — safe to $inc.
+  if (flip.modifiedCount === 0) return;
+
   await TriviaCategory.updateOne(
     { "questions._id": questionId },
     { $inc: { seen: 1 } }
   );
 
-  // Re-fetch to get the updated seen count and total question count
-  const updatedCategory = await TriviaCategory.findOne(
+  const doc = await TriviaCategory.findOne(
     { "questions._id": questionId },
     { seen: 1, questions: 1 }
   );
 
-  if (!updatedCategory) return;
+  if (!doc || doc.questions.length === 0) return;
 
-  const total = updatedCategory.questions.length;
-  if (total === 0) return;
-
-  const seenRatio = updatedCategory.seen / total;
+  const seenRatio = doc.seen / doc.questions.length;
   if (seenRatio < SEEN_THRESHOLD) return;
 
   // Seen ratio has crossed the threshold — record a scheduler trigger
   const weekNumber = getISOWeekNumber(now);
   await SchedulerMetadata.findOneAndUpdate(
-    { category, subDomain, weekNumber },
+    { metadataType: "categorySignal", category, subDomain, weekNumber },
     {
       $set: { lastRunAt: now },
-      $setOnInsert: { createdAt: now, totalQuestionsGenerated: 0 },
+      $setOnInsert: {
+        metadataType: "categorySignal",
+        category,
+        subDomain,
+        weekNumber,
+        createdAt: now,
+        totalQuestionsGenerated: 0,
+      },
     },
     { upsert: true }
   );
@@ -228,8 +238,12 @@ async function updateSeenAndMaybeSchedule({ questionId, category, subDomain, use
 // GET /api/trivia/metrics/daily
 router.get("/metrics/daily", authMiddleware, validate(metricsQuerySchema, "query"), async (req, res, next) => {
   try {
-    const { days } = req.query;
-    const normalized = normaliseTaxonomyInput(req.query);
+    const { days, category, subDomain } = req.query;
+
+    // Normalize legacy category/subDomain query parameters
+    const normalized = normalizeLegacyCategory(category, subDomain);
+    const normalizedCategory = normalized.category;
+    const normalizedSubDomain = normalized.subDomain;
 
     const now = new Date();
     const start = addDaysUTC(now, -Number(days) + 1);
@@ -240,8 +254,8 @@ router.get("/metrics/daily", authMiddleware, validate(metricsQuerySchema, "query
       attemptedAt: { $gte: start },
     };
 
-    if (normalized.category) match.category = normalized.category;
-    if (normalized.subDomain) match.subDomain = normalized.subDomain;
+    if (normalizedCategory) match.category = normalizedCategory;
+    if (normalizedSubDomain) match.subDomain = normalizedSubDomain;
 
     const rows = await TriviaAttempt.aggregate([
       { $match: match },

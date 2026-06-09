@@ -3,8 +3,6 @@ const request = require("supertest");
 const app = require("../app");
 const User = require("../models/User");
 
-require("./setup");
-
 describe("/api/users/me profile update", () => {
   test("GET /api/users/me returns current user", async () => {
     const sessionToken = "profile-token-me";

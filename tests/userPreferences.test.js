@@ -24,9 +24,9 @@ describe("GET /api/user-preferences", () => {
     await UserActivity.create({
       userId: userId,
       categories: [
-        { category: "history", domain: "Modern India", count: 5 },
-        { category: "geography", domain: "Rivers and Mountains", count: 3 },
-        { category: "mythology", domain: "hindu", count: 7 }
+        { category: "history", subDomain: "Modern India", count: 5 },
+        { category: "geography", subDomain: "Rivers and Mountains", count: 3 },
+        { category: "mythology", subDomain: "hindu", count: 7 }
       ]
     });
   });
@@ -39,7 +39,7 @@ describe("GET /api/user-preferences", () => {
     expect(res.statusCode).toBe(200);
     expect(res.body.preferences).toBeDefined();
     expect(res.body.preferences.length).toBe(3);
-    expect(res.body.preferences[0].category).toBe("mythology"); // highest count
+    expect(res.body.preferences[0].category).toBe("religion"); // mythology normalized to religion (highest count)
     expect(res.body.preferences[1].category).toBe("history");
     expect(res.body.preferences[2].category).toBe("geography");
   });

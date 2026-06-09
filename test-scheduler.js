@@ -140,7 +140,7 @@ async function testScheduler() {
         console.log(`\n${tier.toUpperCase()} (${categories.length} categories):`);
         categories.forEach((p, idx) => {
           console.log(
-            `  ${idx + 1}. ${p.category}/${p.domain}`.padEnd(45) +
+            `  ${idx + 1}. ${p.category}/${p.subDomain}`.padEnd(45) +
             `${p.questionCount}q`
           );
         });
@@ -226,7 +226,7 @@ async function testScheduler() {
     console.log('\nSample categories (first 5):');
     displayPlan.slice(0, 5).forEach((p, i) => {
       console.log(
-        `  ${i + 1}. ${p.category}/${p.domain}`.padEnd(40) +
+        `  ${i + 1}. ${p.category}/${p.subDomain}`.padEnd(40) +
         `${p.questionCount}q`.padEnd(8) +
         `(${p.tier})`
       );
@@ -278,7 +278,7 @@ async function testScheduler() {
       if (failures.length > 0) {
         console.log(`\n⚠️  ${failures.length} categories had errors:`);
         failures.forEach(f => {
-          console.log(`  • ${f.category}/${f.domain}: ${f.error}`);
+          console.log(`  • ${f.category}/${f.subDomain || 'unknown'}: ${f.error}`);
         });
       }
 
@@ -315,9 +315,9 @@ async function testScheduler() {
             continue;
           }
 
-          const { category, domain, questions } = result;
+          const { category, subDomain, questions } = result;
 
-          console.log(`\n📚 ${category}/${domain} (${questions.length} questions)`);
+          console.log(`\n📚 ${category}/${subDomain || 'unknown'} (${questions.length} questions)`);
           console.log('─'.repeat(70));
 
           // Display each question

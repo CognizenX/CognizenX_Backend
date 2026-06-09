@@ -62,6 +62,12 @@ const QuestionSchema = new mongoose.Schema({
     type: [Number],
     required: false,
   },
+  // Tracks if any user has seen this question at least once.
+  seenGlobally: {
+    type: Boolean,
+    default: false,
+    required: false,
+  },
 });
 
 // Define the schema for trivia categories and associated questions

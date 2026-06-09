@@ -1,23 +1,26 @@
 const mongoose = require("mongoose");
 
 const SchedulerMetadataSchema = new mongoose.Schema({
-  // ISO week number (1–53) of the year the scheduler ran
-  weekNumber: {
-    type: Number,
-    default: 0,
-    index: true,
+  metadataType: {
+    type: String,
+    enum: ["global", "categorySignal"],
+    default: "global",
   },
 
   category: {
     type: String,
-    required: true,
-    trim: true,
+    default: null,
   },
 
   subDomain: {
     type: String,
-    required: true,
-    trim: true,
+    default: null,
+  },
+
+  // ISO week number (1–53) of the year the scheduler ran
+  weekNumber: {
+    type: Number,
+    default: 0,
   },
 
   lastRunAt: {
@@ -38,7 +41,15 @@ const SchedulerMetadataSchema = new mongoose.Schema({
   },
 });
 
-// One scheduler record per category+subDomain per week
-SchedulerMetadataSchema.index({ category: 1, subDomain: 1, weekNumber: 1 }, { unique: true });
+// Keep one global scheduler-state document, plus one category signal per week.
+SchedulerMetadataSchema.index(
+  { metadataType: 1 },
+  { unique: true, partialFilterExpression: { metadataType: "global" } }
+);
+
+SchedulerMetadataSchema.index(
+  { metadataType: 1, category: 1, subDomain: 1, weekNumber: 1 },
+  { unique: true, partialFilterExpression: { metadataType: "categorySignal" } }
+);
 
 module.exports = mongoose.model("SchedulerMetadata", SchedulerMetadataSchema);

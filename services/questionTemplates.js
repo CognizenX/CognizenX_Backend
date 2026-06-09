@@ -87,6 +87,108 @@ const questionTemplates = {
       ]
     },
   },
+  art: {
+    'Western Art': {
+      topics: [
+        "Renaissance and Baroque art",
+        "Impressionism and Post-Impressionism",
+        "Famous Western artists",
+        "Art museums and galleries"
+      ]
+    },
+    'Eastern Art': {
+      topics: [
+        "East Asian painting and calligraphy",
+        "Traditional ceramics and crafts",
+        "Religious and temple art",
+        "Iconic Eastern art forms"
+      ]
+    },
+    'South Asian': {
+      topics: [
+        "Indian classical art",
+        "Folk and tribal art",
+        "South Asian art traditions",
+        "Notable South Asian artists"
+      ]
+    },
+    'Architecture Sculpture': {
+      topics: [
+        "Historic architecture styles",
+        "Famous monuments and sculptures",
+        "Temple and palace architecture",
+        "Materials and techniques in sculpture"
+      ]
+    }
+  },
+  culture: {
+    'Global Traditions': {
+      topics: [
+        "World cultural traditions",
+        "Customs and social practices",
+        "Heritage and folklore",
+        "Cultural symbols and meanings"
+      ]
+    },
+    'South Asian': {
+      topics: [
+        "South Asian customs and values",
+        "Indian cultural heritage",
+        "Regional cultures in South Asia",
+        "Languages and scripts"
+      ]
+    },
+    'Festivals Rituals': {
+      topics: [
+        "Major world festivals",
+        "Indian and South Asian festivals",
+        "Rituals and ceremonies",
+        "Seasonal celebrations"
+      ]
+    },
+    'Performing Arts': {
+      topics: [
+        "Classical dance forms",
+        "Traditional music styles",
+        "Theatre and performance",
+        "Folk dances and music"
+      ]
+    }
+  },
+  cuisine: {
+    'World Cuisines': {
+      topics: [
+        "Global cuisine styles",
+        "Signature dishes by region",
+        "Culinary traditions",
+        "Famous foods worldwide"
+      ]
+    },
+    'South Asian': {
+      topics: [
+        "Indian regional cuisines",
+        "South Asian cooking styles",
+        "Popular South Asian dishes",
+        "Staple foods and grains"
+      ]
+    },
+    'Street Foods': {
+      topics: [
+        "Popular street foods",
+        "Snack culture",
+        "Markets and food stalls",
+        "Regional street food favorites"
+      ]
+    },
+    'Spices Ingredients': {
+      topics: [
+        "Common spices and herbs",
+        "Spice blends and masalas",
+        "Cooking ingredients",
+        "Flavor profiles"
+      ]
+    }
+  },
   
   religion: {
     Islam: {
