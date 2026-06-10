@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const SchedulerMetadataSchema = new mongoose.Schema({
   metadataType: {
     type: String,
-    enum: ["global", "categorySignal"],
+    enum: ["global", "categorySignal", "userExhaustionSignal"],
     default: "global",
   },
 
@@ -51,5 +51,6 @@ SchedulerMetadataSchema.index(
   { metadataType: 1, category: 1, subDomain: 1, weekNumber: 1 },
   { unique: true, partialFilterExpression: { metadataType: "categorySignal" } }
 );
+
 
 module.exports = mongoose.model("SchedulerMetadata", SchedulerMetadataSchema);

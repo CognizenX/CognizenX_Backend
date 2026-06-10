@@ -10,11 +10,13 @@ const TriviaCategory = require("../models/TriviaCategory");
 const TriviaAttempt = require("../models/TriviaAttempt");
 const UserQuestionStats = require("../models/UserQuestionStats");
 const SchedulerMetadata = require("../models/SchedulerMetadata");
+const { computeNextReviewAt } = require("../services/reviewScheduler");
+const { buildCategorySubDomainQuery } = require("../utils/taxonomy");
 const router = express.Router();
 
-// Fraction of a category's questions that must have been seen before
-// the scheduler is triggered to generate new questions (80%).
+// Legacy global seen ratio (analytics only; cron uses per-user exhaustion).
 const SEEN_THRESHOLD = 0.8;
+const USER_EXHAUSTION_RATIO = Number(process.env.USER_EXHAUSTION_RATIO || 0.9);
 
 const attemptSchema = Joi.object({
   questionId: Joi.string().required(),
@@ -114,6 +116,13 @@ router.post("/attempts", authMiddleware, validate(attemptSchema), async (req, re
         userId: req.user._id,
         now,
       });
+
+      await checkPerUserExhaustionAndSignal({
+        userId: req.user._id,
+        category: normalizedCategory,
+        subDomain: normalizedSubDomain,
+        now,
+      });
     } catch (sideEffectErr) {
       console.error("[trivia/attempts] side-effect error:", sideEffectErr);
     }
@@ -169,6 +178,15 @@ async function updateUserQuestionStats({ userId, questionId, category, subDomain
     ? timeTakenMs
     : Math.round(((stats.avgTimeTakenMs * (stats.attemptCount - 1)) + timeTakenMs) / stats.attemptCount);
 
+  const reviewUpdate = {};
+  if (isCorrect) {
+    reviewUpdate.masteredAt = now;
+    reviewUpdate.nextReviewAt = null;
+  } else {
+    reviewUpdate.nextReviewAt = computeNextReviewAt(newCurrentWrongStreak, now);
+    reviewUpdate.masteredAt = null;
+  }
+
   await UserQuestionStats.updateOne(
     { _id: stats._id },
     {
@@ -176,8 +194,54 @@ async function updateUserQuestionStats({ userId, questionId, category, subDomain
         currentWrongStreak: newCurrentWrongStreak,
         maxWrongStreak: newMaxWrongStreak,
         avgTimeTakenMs: newAvg,
+        ...reviewUpdate,
       },
     }
+  );
+}
+
+/**
+ * When a user has attempted >= USER_EXHAUSTION_RATIO of a subdomain bank,
+ * record a per-user exhaustion signal for demand-aware cron.
+ */
+async function checkPerUserExhaustionAndSignal({ userId, category, subDomain, now }) {
+  const bankDoc = await TriviaCategory.findOne(
+    buildCategorySubDomainQuery(category, subDomain),
+    { questions: 1 }
+  ).lean();
+
+  const bankSize = Array.isArray(bankDoc?.questions) ? bankDoc.questions.length : 0;
+  if (bankSize === 0) return;
+
+  const userCoverage = await UserQuestionStats.countDocuments({
+    userId,
+    category,
+    subDomain,
+  });
+
+  const coverageRatio = userCoverage / bankSize;
+  if (coverageRatio < USER_EXHAUSTION_RATIO) return;
+
+  const weekNumber = getISOWeekNumber(now);
+  await SchedulerMetadata.findOneAndUpdate(
+    {
+      metadataType: "userExhaustionSignal",
+      category,
+      subDomain,
+      weekNumber,
+    },
+    {
+      $set: { lastRunAt: now },
+      $setOnInsert: {
+        metadataType: "userExhaustionSignal",
+        category,
+        subDomain,
+        weekNumber,
+        createdAt: now,
+        totalQuestionsGenerated: 0,
+      },
+    },
+    { upsert: true }
   );
 }
 

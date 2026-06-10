@@ -15,7 +15,15 @@ const { formatQuestions } = require('../utils/questionFormatter');
 const { ingestQuestions } = require('./questionIngestion');
 const { buildCategorySubDomainQuery } = require('../utils/taxonomy');
 
-const QUESTION_GENERATION_COUNT = 10; 
+const QUESTION_GENERATION_COUNT = 10;
+const GENERATION_BATCH_SIZE = 10;
+
+function buildAvoidTopics(existingQuestions = [], limit = 15) {
+  return existingQuestions
+    .map((q) => String(q.question || '').trim())
+    .filter(Boolean)
+    .slice(0, limit);
+}
 
 /**
  * Generate and save questions for a single category/subDomain
@@ -35,29 +43,57 @@ const QUESTION_GENERATION_COUNT = 10;
  *   error?: string
  * }
  */
-async function generateQuestionsForCategory(category, subDomain, retries = 3) {
+async function generateQuestionsForCategory(category, subDomain, options = {}) {
+  const {
+    questionCount = QUESTION_GENERATION_COUNT,
+    retries = 3,
+    avoidTopics: providedAvoidTopics = null,
+  } = options;
+
   let lastError;
+  let totalAdded = 0;
+  let totalDuplicates = 0;
+  let totalExactDuplicates = 0;
+  let totalSemanticDuplicates = 0;
+  const allAccepted = [];
 
-  // Retry logic: attempt generation up to 3 times in case of API failures
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      console.log(
-        `[GENERATOR] Generating ${QUESTION_GENERATION_COUNT} questions for "${category}/${subDomain}" (Attempt ${attempt}/${retries})`
-      );
+  let triviaCategory = await TriviaCategory.findOne(
+    buildCategorySubDomainQuery(category, subDomain)
+  );
 
-      // Call generateQuestions() from routes/ai.js
-      const generatedQuestions = await generateQuestions(category, subDomain, QUESTION_GENERATION_COUNT);
+  if (!triviaCategory) {
+    triviaCategory = new TriviaCategory({
+      category,
+      subDomain,
+      questions: [],
+    });
+    console.log(`[GENERATOR] Created new category document for ${category}/${subDomain}`);
+  }
 
-      if (!generatedQuestions || generatedQuestions.length === 0) {
-        throw new Error('OpenAI returned no questions');
-      }
+  let remaining = questionCount;
+  let batchNumber = 0;
 
-      console.log(
-        `[GENERATOR] OpenAI returned ${generatedQuestions.length} questions for ${category}/${subDomain}`
-      );
+  while (remaining > 0 && batchNumber < 10) {
+    batchNumber += 1;
+    const batchSize = Math.min(remaining, GENERATION_BATCH_SIZE);
+    const avoidTopics = providedAvoidTopics || buildAvoidTopics(triviaCategory.questions);
 
-      const generatedQuestionsWithExplanations = await Promise.all(
-        generatedQuestions.map(async (questionObj, index) => {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        console.log(
+          `[GENERATOR] Generating ${batchSize} questions for "${category}/${subDomain}" (batch ${batchNumber}, attempt ${attempt}/${retries})`
+        );
+
+        const generatedQuestions = await generateQuestions(category, subDomain, batchSize, {
+          avoidTopics,
+        });
+
+        if (!generatedQuestions || generatedQuestions.length === 0) {
+          throw new Error('OpenAI returned no questions');
+        }
+
+        const generatedQuestionsWithExplanations = await Promise.all(
+          generatedQuestions.map(async (questionObj) => {
           // Retry explanation generation up to 3 times
           let explanation = null;
           let lastExplanationError = null;
@@ -98,87 +134,86 @@ async function generateQuestionsForCategory(category, subDomain, retries = 3) {
       // Filter out questions that failed explanation generation
       const validQuestions = generatedQuestionsWithExplanations.filter(q => q !== null);
 
-      if (validQuestions.length === 0) {
-        throw new Error('No valid questions with explanations after generation');
-      }
+        if (validQuestions.length === 0) {
+          throw new Error('No valid questions with explanations after generation');
+        }
 
-      console.log(
-        `\n[GENERATOR] ✅ Successfully generated ${validQuestions.length} questions with explanations (${generatedQuestions.length - validQuestions.length} skipped)\n`
-      );
-
-      // Adds metadata like subDomain, aiGenerated flag, difficulty, createdAt
-      const formattedQuestions = formatQuestions(validQuestions, {
-        category,
-        subDomain: subDomain,
-        aiGenerated: true,
-      });
-
-      if (formattedQuestions.length === 0) {
-        throw new Error('No valid questions after formatting');
-      }
-
-      // Find or create the TriviaCategory document
-      let triviaCategory = await TriviaCategory.findOne(
-        buildCategorySubDomainQuery(category, subDomain)
-      );
-
-      if (!triviaCategory) {
-        triviaCategory = new TriviaCategory({
+        const formattedQuestions = formatQuestions(validQuestions, {
           category,
           subDomain,
-          questions: [],
+          aiGenerated: true,
         });
-        console.log(`[GENERATOR] Created new category document for ${category}/${subDomain}`);
-      }
 
-      const ingestResult = await ingestQuestions({
-        category,
-        subDomain,
-        candidates: formattedQuestions,
-        existingQuestions: triviaCategory.questions,
-        logPrefix: `${category}/${subDomain}`,
-      });
+        if (formattedQuestions.length === 0) {
+          throw new Error('No valid questions after formatting');
+        }
 
-      triviaCategory.questions.push(...ingestResult.accepted);
-      await triviaCategory.save();
+        const ingestResult = await ingestQuestions({
+          category,
+          subDomain,
+          candidates: formattedQuestions,
+          existingQuestions: triviaCategory.questions,
+          logPrefix: `${category}/${subDomain}`,
+        });
 
-      console.log(
-        `[GENERATOR] SUCCESS: Added ${ingestResult.addedCount} questions (${ingestResult.exactDuplicateCount} exact, ${ingestResult.semanticDuplicateCount} semantic duplicates skipped) for "${category}/${subDomain}"`
-      );
+        triviaCategory.questions.push(...ingestResult.accepted);
+        await triviaCategory.save();
 
-      return {
-        success: true,
-        questionsGenerated: ingestResult.addedCount,
-        duplicates: ingestResult.duplicateCount,
-        exactDuplicates: ingestResult.exactDuplicateCount,
-        semanticDuplicates: ingestResult.semanticDuplicateCount,
-        questions: ingestResult.accepted,
-      };
-    } catch (error) {
-      lastError = error;
-      console.error(
-        `[GENERATOR] Attempt ${attempt} failed for "${category}/${subDomain}":`,
-        error.message
-      );
+        totalAdded += ingestResult.addedCount;
+        totalDuplicates += ingestResult.duplicateCount;
+        totalExactDuplicates += ingestResult.exactDuplicateCount;
+        totalSemanticDuplicates += ingestResult.semanticDuplicateCount;
+        allAccepted.push(...ingestResult.accepted);
+        remaining = Math.max(0, questionCount - totalAdded);
 
-      // Wait before retrying (exponential backoff: 2s, 4s, 6s)
-      if (attempt < retries) {
-        const delay = 2000 * attempt;
-        console.log(`[GENERATOR] Waiting ${delay}ms before retry...`);
-        await new Promise((resolve) => setTimeout(resolve, delay));
+        console.log(
+          `[GENERATOR] Batch added ${ingestResult.addedCount} (${ingestResult.exactDuplicateCount} exact, ${ingestResult.semanticDuplicateCount} semantic duplicates skipped) for "${category}/${subDomain}"`
+        );
+
+        if (ingestResult.addedCount === 0) {
+          break;
+        }
+
+        break;
+      } catch (error) {
+        lastError = error;
+        console.error(
+          `[GENERATOR] Attempt ${attempt} failed for "${category}/${subDomain}":`,
+          error.message
+        );
+
+        if (attempt < retries) {
+          const delay = 2000 * attempt;
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
       }
     }
+
+    if (totalAdded === 0) {
+      break;
+    }
+
+    if (remaining <= 0) break;
+    await new Promise((resolve) => setTimeout(resolve, 2000));
   }
 
-  // All retries exhausted
-  console.error(
-    `[GENERATOR] FAILED after ${retries} attempts for "${category}/${subDomain}"`
-  );
+  if (totalAdded > 0) {
+    return {
+      success: true,
+      questionsGenerated: totalAdded,
+      duplicates: totalDuplicates,
+      exactDuplicates: totalExactDuplicates,
+      semanticDuplicates: totalSemanticDuplicates,
+      questions: allAccepted,
+    };
+  }
+
+  console.error(`[GENERATOR] FAILED for "${category}/${subDomain}"`);
   return {
     success: false,
     questionsGenerated: 0,
     duplicates: 0,
-    questions: [],  // Empty array on failure
+    questions: [],
     error: lastError?.message || 'Unknown error',
   };
 }
@@ -289,14 +324,22 @@ async function runWeeklyGeneration(generationPlan) {
 
     console.log(`[SCHEDULER] Week: ${weekNumber}`);
     console.log(`[SCHEDULER] Categories to process: ${generationPlan.length}`);
-    console.log(`[SCHEDULER] Generating 10 questions per category\n`);
+    const totalPlanned = generationPlan.reduce((sum, item) => sum + (item.questionCount || QUESTION_GENERATION_COUNT), 0);
+    console.log(`[SCHEDULER] Planned questions this run: ${totalPlanned}\n`);
 
     const results = [];
     let totalQuestionsGenerated = 0;
     let categoriesWithQuestions = 0;
 
     for (const planItem of generationPlan) {
-      const { category, subDomain, domain: legacyDomain, tier } = planItem;
+      const {
+        category,
+        subDomain,
+        domain: legacyDomain,
+        tier,
+        questionCount = QUESTION_GENERATION_COUNT,
+        cronRunId,
+      } = planItem;
       const resolvedSubDomain = subDomain || legacyDomain;
 
       if (!resolvedSubDomain) {
@@ -313,16 +356,26 @@ async function runWeeklyGeneration(generationPlan) {
         continue;
       }
 
-      // Generate questions for this category (always uses QUESTION_GENERATION_COUNT)
-      const result = await generateQuestionsForCategory(
-        category,
-        resolvedSubDomain
-      );
+      const result = await generateQuestionsForCategory(category, resolvedSubDomain, {
+        questionCount,
+      });
+
+      if (cronRunId && result.success) {
+        const { markSnapshotFulfilled } = require('./generationPlan');
+        await markSnapshotFulfilled({
+          category,
+          subDomain: resolvedSubDomain,
+          cronRunId,
+          questionsGenerated: result.questionsGenerated,
+        }).catch((err) => console.error('[SCHEDULER] snapshot update failed:', err.message));
+      }
 
       results.push({
         category,
         subDomain: resolvedSubDomain,
         tier,
+        questionCount,
+        cronRunId,
         ...result,
       });
 

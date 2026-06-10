@@ -46,6 +46,9 @@ const UserQuestionStatsSchema = new mongoose.Schema({
   lastAttemptedAt: { type: Date },
   avgTimeTakenMs: { type: Number, default: 0 },
 
+  nextReviewAt: { type: Date, default: null },
+  masteredAt: { type: Date, default: null },
+
   attemptHistory: [AttemptHistorySchema],
 });
 
@@ -53,5 +56,7 @@ const UserQuestionStatsSchema = new mongoose.Schema({
 UserQuestionStatsSchema.index({ userId: 1, questionId: 1 }, { unique: true });
 // For per-user category queries
 UserQuestionStatsSchema.index({ userId: 1, category: 1 });
+UserQuestionStatsSchema.index({ userId: 1, subDomain: 1 });
+UserQuestionStatsSchema.index({ userId: 1, category: 1, subDomain: 1 });
 
 module.exports = mongoose.model("UserQuestionStats", UserQuestionStatsSchema);

@@ -3,6 +3,7 @@ const app = require("../app");
 
 const User = require("../models/User");
 const TriviaCategory = require("../models/TriviaCategory");
+const UserQuestionStats = require("../models/UserQuestionStats");
 
 describe("Trivia attempts + daily metrics", () => {
   test("records an attempt and aggregates daily metrics", async () => {
@@ -57,5 +58,57 @@ describe("Trivia attempts + daily metrics", () => {
     expect(day.correctCount).toBe(1);
     expect(day.incorrectCount).toBe(0);
     expect(day.avgTimeTakenMs).toBe(1234);
+  });
+
+  test("schedules nextReviewAt on wrong answers and clears on correct", async () => {
+    const sessionToken = "review-token";
+
+    const user = await User.create({
+      name: "Review User",
+      email: "review@example.com",
+      password: "hashed",
+      age: 30,
+      gender: "female",
+      countryOfOrigin: "US",
+      yearsOfEducation: 16,
+      sessionToken,
+      tokenExpiresAt: null,
+    });
+
+    const trivia = await TriviaCategory.create({
+      category: "history",
+      subDomain: "Modern India",
+      questions: [
+        {
+          question: "Who was the first President of India?",
+          options: ["Prasad", "Nehru"],
+          correctAnswer: "Prasad",
+          subDomain: "Modern India",
+        },
+      ],
+    });
+
+    const questionId = trivia.questions[0]._id.toString();
+
+    await request(app)
+      .post("/api/trivia/attempts")
+      .set("Authorization", `Bearer ${sessionToken}`)
+      .send({ questionId, selectedAnswer: "Nehru", timeTakenMs: 900 })
+      .expect(201);
+
+    let stats = await UserQuestionStats.findOne({ userId: user._id, questionId });
+    expect(stats.nextReviewAt).toBeTruthy();
+    expect(stats.masteredAt).toBeFalsy();
+
+    await request(app)
+      .post("/api/trivia/attempts")
+      .set("Authorization", `Bearer ${sessionToken}`)
+      .send({ questionId, selectedAnswer: "Prasad", timeTakenMs: 800 })
+      .expect(201);
+
+    stats = await UserQuestionStats.findOne({ userId: user._id, questionId });
+    expect(stats.masteredAt).toBeTruthy();
+    expect(stats.nextReviewAt).toBeFalsy();
+    expect(stats.lastResultCorrect).toBe(true);
   });
 });

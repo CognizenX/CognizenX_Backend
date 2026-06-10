@@ -102,9 +102,11 @@ const usersRoutes = require("./routes/users");
 const activityRoutes = require("./routes/activity");
 const triviaRoutes = require("./routes/trivia");
 const reportsRoutes = require("./routes/reports");
+const userQuizRoutes = require("./routes/userQuiz");
 
 app.use("/api/auth", authRoutes);
 app.use("/api", questionsRoutes);
+app.use("/api", userQuizRoutes);
 app.use("/api", aiRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api", activityRoutes);
