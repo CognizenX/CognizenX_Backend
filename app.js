@@ -103,6 +103,7 @@ const activityRoutes = require("./routes/activity");
 const triviaRoutes = require("./routes/trivia");
 const reportsRoutes = require("./routes/reports");
 const userQuizRoutes = require("./routes/userQuiz");
+const gamesRoutes = require("./routes/games");
 
 app.use("/api/auth", authRoutes);
 app.use("/api", questionsRoutes);
@@ -111,6 +112,7 @@ app.use("/api", aiRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api", activityRoutes);
 app.use("/api/trivia", triviaRoutes);
+app.use("/api/games", gamesRoutes);
 app.use("/api", reportsRoutes);
 
 // Error handling middleware (must be last)

@@ -72,7 +72,7 @@ Week Number: ${data.weekNumber || 'N/A'}
 Categories to Process: ${data.categoriesCount || 'N/A'}
 Expected Questions: ${data.expectedQuestionsCount || 'N/A'}
 
-This is an automated notification from CognizenX.
+This is an automated notification from MindMitra.
     `.trim();
     
     htmlContent = `
@@ -97,7 +97,7 @@ This is an automated notification from CognizenX.
             <td style="padding: 10px; border: 1px solid #ddd;">${data.expectedQuestionsCount || 'N/A'}</td>
           </tr>
         </table>
-        <p style="color: #666; font-size: 12px; margin-top: 30px;">This is an automated notification from CognizenX.</p>
+        <p style="color: #666; font-size: 12px; margin-top: 30px;">This is an automated notification from MindMitra.</p>
       </div>
     `;
   } else if (status === 'completed') {
@@ -118,7 +118,7 @@ Categories Processed: ${data.categoriesProcessed || 0}
 Categories with Questions: ${data.categoriesWithQuestions || 0}
 ${data.failures > 0 ? `\nFailures: ${data.failures} categories had errors` : ''}
 
-This is an automated notification from CognizenX.
+This is an automated notification from MindMitra.
     `.trim();
     
     htmlContent = `
@@ -165,7 +165,7 @@ This is an automated notification from CognizenX.
           </ul>
         </div>
         ` : ''}
-        <p style="color: #666; font-size: 12px; margin-top: 30px;">This is an automated notification from CognizenX.</p>
+        <p style="color: #666; font-size: 12px; margin-top: 30px;">This is an automated notification from MindMitra.</p>
       </div>
     `;
   } else {
