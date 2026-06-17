@@ -49,12 +49,29 @@ describe("Auth diagnostics: signup + login", () => {
     expect(fields).toEqual(expect.arrayContaining(["gender", "countryOfOrigin", "yearsOfEducation"]));
   });
 
-  it("rejects signup when the name contains punctuation (common UI mismatch)", async () => {
+  it("accepts signup names with apostrophes or hyphens", async () => {
     const res = await request(app)
       .post("/api/auth/signup")
       .send({
-        name: "O'Connor",
+        name: "O'Connor-Smith",
         email: `punct.${Date.now()}@example.com`,
+        password: "TestPass123!",
+        age: 70,
+        gender: "male",
+        countryOfOrigin: "Ireland",
+        yearsOfEducation: 16,
+      });
+
+    expect(res.statusCode).toBe(201);
+    expect(res.body).toHaveProperty("sessionToken");
+  });
+
+  it("rejects signup when the name contains unsupported punctuation", async () => {
+    const res = await request(app)
+      .post("/api/auth/signup")
+      .send({
+        name: "User@123",
+        email: `bad-name.${Date.now()}@example.com`,
         password: "TestPass123!",
         age: 70,
         gender: "male",
