@@ -15,7 +15,7 @@ describe("Game sessions + metrics", () => {
       age: 65,
       gender: "female",
       countryOfOrigin: "US",
-      yearsOfEducation: 12,
+      highestEducationLevel: "high_school_ged",
       sessionToken,
       tokenExpiresAt: null,
     });
@@ -88,7 +88,7 @@ describe("Game sessions + metrics", () => {
       age: 65,
       gender: "male",
       countryOfOrigin: "US",
-      yearsOfEducation: 12,
+      highestEducationLevel: "high_school_ged",
       sessionToken,
       tokenExpiresAt: null,
     });

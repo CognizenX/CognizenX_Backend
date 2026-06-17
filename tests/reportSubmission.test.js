@@ -15,7 +15,7 @@ describe("POST /api/reports", () => {
       age: 42,
       gender: "female",
       countryOfOrigin: "US",
-      yearsOfEducation: 16,
+      highestEducationLevel: "bachelor_degree",
       sessionToken,
       tokenExpiresAt: null,
     });

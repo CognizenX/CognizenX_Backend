@@ -10,7 +10,7 @@ describe("rate limiting", () => {
       dob: "1990-01-01",
       gender: "female",
       countryOfOrigin: "US",
-      yearsOfEducation: 12,
+      highestEducationLevel: "high_school_ged",
     };
 
     const userA = await request(app)

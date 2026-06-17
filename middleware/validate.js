@@ -26,8 +26,10 @@ const signupSchema = Joi.object({
   age: Joi.number().integer().min(USER_CONSTRAINTS.AGE_MIN).max(USER_CONSTRAINTS.AGE_MAX),
   gender: Joi.string().valid(...USER_CONSTRAINTS.GENDER_VALUES).required(),
   countryOfOrigin: Joi.string().max(USER_CONSTRAINTS.COUNTRY_MAX_LEN).required(),
-  yearsOfEducation: Joi.number().integer().min(USER_CONSTRAINTS.EDU_YEARS_MIN).max(USER_CONSTRAINTS.EDU_YEARS_MAX).required(),
-}).or("dob", "age");
+  // New clients send highestEducationLevel; legacy prod app sends yearsOfEducation.
+  highestEducationLevel: Joi.string().valid(...USER_CONSTRAINTS.EDUCATION_LEVEL_VALUES),
+  yearsOfEducation: Joi.number().integer().min(USER_CONSTRAINTS.EDU_YEARS_MIN).max(USER_CONSTRAINTS.EDU_YEARS_MAX),
+}).or("dob", "age").or("highestEducationLevel", "yearsOfEducation");
 
 const loginSchema = Joi.object({
   email: Joi.string().email().max(100).required(),

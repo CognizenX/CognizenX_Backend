@@ -10,6 +10,8 @@ const USER_CONSTRAINTS = {
   COUNTRY_MAX_LEN: 80,
 
   GENDER_VALUES: ["male", "female", "non_binary", "other", "prefer_not_to_say"],
+
+  EDUCATION_LEVEL_VALUES: require("./educationLevels").EDUCATION_LEVEL_VALUES,
 };
 
 module.exports = USER_CONSTRAINTS;

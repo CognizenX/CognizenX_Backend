@@ -33,7 +33,7 @@ describe('buildGenerationPlan', () => {
       age: 40,
       gender: 'male',
       countryOfOrigin: 'IN',
-      yearsOfEducation: 12,
+      highestEducationLevel: "high_school_ged",
       sessionToken: 'heavy-token',
     });
 

@@ -15,7 +15,7 @@ describe('GET /api/user-quiz', () => {
       age: 30,
       gender: 'female',
       countryOfOrigin: 'IN',
-      yearsOfEducation: 16,
+      highestEducationLevel: "bachelor_degree",
       sessionToken,
       tokenExpiresAt: null,
     });
