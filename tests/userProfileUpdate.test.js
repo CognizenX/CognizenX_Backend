@@ -46,7 +46,7 @@ describe("/api/users/me profile update", () => {
         dob: "1960-01-02",
         gender: "female",
         countryOfOrigin: "US",
-        yearsOfEducation: 14,
+        highestEducationLevel: "high_school_ged",
       })
       .expect(200);
 
@@ -54,7 +54,8 @@ describe("/api/users/me profile update", () => {
     expect(setRes.body.user.dob).toBe("1960-01-02");
     expect(setRes.body.user.gender).toBe("female");
     expect(setRes.body.user.countryOfOrigin).toBe("US");
-    expect(setRes.body.user.yearsOfEducation).toBe(14);
+    expect(setRes.body.user.highestEducationLevel).toBe("high_school_ged");
+    expect(setRes.body.user.educationDisplay).toBe("High school / GED");
     expect(setRes.body.user.locks).toEqual({ dob: true, gender: true });
 
     // Can still edit name/email/country/education
@@ -65,14 +66,14 @@ describe("/api/users/me profile update", () => {
         name: "Updated Name",
         email: "updated-profile@example.com",
         countryOfOrigin: "CA",
-        yearsOfEducation: 15,
+        highestEducationLevel: "some_college",
       })
       .expect(200);
 
     expect(editRes.body.user.name).toBe("Updated Name");
     expect(editRes.body.user.email).toBe("updated-profile@example.com");
     expect(editRes.body.user.countryOfOrigin).toBe("CA");
-    expect(editRes.body.user.yearsOfEducation).toBe(15);
+    expect(editRes.body.user.highestEducationLevel).toBe("some_college");
 
     const dbUser = await User.findById(user._id);
     expect(dbUser).toBeTruthy();
@@ -94,6 +95,7 @@ describe("/api/users/me profile update", () => {
       gender: "male",
       countryOfOrigin: "US",
       yearsOfEducation: 16,
+      highestEducationLevel: "bachelor_degree",
     });
 
     await request(app)
@@ -112,10 +114,32 @@ describe("/api/users/me profile update", () => {
     const okRes = await request(app)
       .patch("/api/users/me")
       .set("Authorization", `Bearer ${sessionToken}`)
-      .send({ countryOfOrigin: "GB", yearsOfEducation: 17 })
+      .send({ countryOfOrigin: "GB", highestEducationLevel: "master_degree" })
       .expect(200);
 
     expect(okRes.body.user.countryOfOrigin).toBe("GB");
-    expect(okRes.body.user.yearsOfEducation).toBe(17);
+    expect(okRes.body.user.highestEducationLevel).toBe("master_degree");
+  });
+
+  test("legacy yearsOfEducation displays in educationDisplay when level is unset", async () => {
+    const sessionToken = "profile-token-legacy-edu";
+
+    await User.create({
+      name: "Legacy Edu",
+      email: "legacy-edu-display@example.com",
+      password: "hashed",
+      sessionToken,
+      tokenExpiresAt: null,
+      yearsOfEducation: 12,
+    });
+
+    const res = await request(app)
+      .get("/api/users/me")
+      .set("Authorization", `Bearer ${sessionToken}`)
+      .expect(200);
+
+    expect(res.body.user.yearsOfEducation).toBe(12);
+    expect(res.body.user.highestEducationLevel).toBeNull();
+    expect(res.body.user.educationDisplay).toBe("12 years of education");
   });
 });

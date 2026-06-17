@@ -31,6 +31,12 @@ const UserSchema = new mongoose.Schema({
         trim: true,
         maxlength: USER_CONSTRAINTS.COUNTRY_MAX_LEN,
     },
+    highestEducationLevel: {
+        type: String,
+        required: false,
+        enum: USER_CONSTRAINTS.EDUCATION_LEVEL_VALUES,
+    },
+    // Legacy field kept for users created before education-level signup.
     yearsOfEducation: {
         type: Number,
         required: false,

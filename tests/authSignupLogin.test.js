@@ -16,7 +16,7 @@ describe("Auth diagnostics: signup + login", () => {
         age: 65,
         gender: "female",
         countryOfOrigin: "United States",
-        yearsOfEducation: 12,
+        highestEducationLevel: "high_school_ged",
       });
 
     expect(signupRes.statusCode).toBe(201);
@@ -46,20 +46,62 @@ describe("Auth diagnostics: signup + login", () => {
     expect(res.statusCode).toBe(400);
     expect(res.body).toMatchObject({ message: "Validation error" });
     const fields = (res.body.details || []).map((d) => d.field);
-    expect(fields).toEqual(expect.arrayContaining(["gender", "countryOfOrigin", "yearsOfEducation"]));
+    expect(fields).toEqual(expect.arrayContaining(["gender", "countryOfOrigin"]));
+    expect(
+      res.body.details.some(
+        (d) =>
+          d.field === "highestEducationLevel" ||
+          d.field === "yearsOfEducation" ||
+          /highestEducationLevel|yearsOfEducation/.test(String(d.message || ""))
+      )
+    ).toBe(true);
   });
 
-  it("rejects signup when the name contains punctuation (common UI mismatch)", async () => {
+  it("accepts legacy signup with yearsOfEducation only (older app versions)", async () => {
     const res = await request(app)
       .post("/api/auth/signup")
       .send({
-        name: "O'Connor",
+        name: "Legacy Edu User",
+        email: `legacy-edu.${Date.now()}@example.com`,
+        password: "TestPass123!",
+        age: 68,
+        gender: "female",
+        countryOfOrigin: "US",
+        yearsOfEducation: 12,
+      });
+
+    expect(res.statusCode).toBe(201);
+    expect(res.body).toHaveProperty("sessionToken");
+  });
+
+  it("accepts signup names with apostrophes or hyphens", async () => {
+    const res = await request(app)
+      .post("/api/auth/signup")
+      .send({
+        name: "O'Connor-Smith",
         email: `punct.${Date.now()}@example.com`,
         password: "TestPass123!",
         age: 70,
         gender: "male",
         countryOfOrigin: "Ireland",
-        yearsOfEducation: 16,
+        highestEducationLevel: "bachelor_degree",
+      });
+
+    expect(res.statusCode).toBe(201);
+    expect(res.body).toHaveProperty("sessionToken");
+  });
+
+  it("rejects signup when the name contains unsupported punctuation", async () => {
+    const res = await request(app)
+      .post("/api/auth/signup")
+      .send({
+        name: "User@123",
+        email: `bad-name.${Date.now()}@example.com`,
+        password: "TestPass123!",
+        age: 70,
+        gender: "male",
+        countryOfOrigin: "Ireland",
+        highestEducationLevel: "bachelor_degree",
       });
 
     expect(res.statusCode).toBe(400);
@@ -83,7 +125,7 @@ describe("Auth diagnostics: signup + login", () => {
         age: 60,
         gender: "other",
         countryOfOrigin: "Canada",
-        yearsOfEducation: 14,
+        highestEducationLevel: "some_college",
       });
 
     expect(signupRes.statusCode).toBe(201);
@@ -109,7 +151,7 @@ describe("Auth diagnostics: signup + login", () => {
         age: 55,
         gender: "prefer_not_to_say",
         countryOfOrigin: "US",
-        yearsOfEducation: 10,
+        highestEducationLevel: "high_school_ged",
       })
       .expect(201);
 

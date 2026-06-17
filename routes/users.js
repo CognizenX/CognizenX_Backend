@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const User = require("../models/User");
 const UserActivity = require("../models/UserActivity");
 const USER_CONSTRAINTS = require("../config/userConstraints");
+const { formatUserEducation } = require("../config/educationLevels");
 
 const authMiddleware = require("../middleware/auth");
 const { validate } = require("../middleware/validate");
@@ -62,7 +63,9 @@ function publicUser(user) {
     age: computedAge,
     gender: user.gender ?? null,
     countryOfOrigin: user.countryOfOrigin ?? null,
+    highestEducationLevel: user.highestEducationLevel ?? null,
     yearsOfEducation: user.yearsOfEducation ?? null,
+    educationDisplay: formatUserEducation(user),
     locks: {
       dob: Boolean(user.dob),
       gender: Boolean(user.gender),
@@ -71,11 +74,12 @@ function publicUser(user) {
 }
 
 const updateMeSchema = Joi.object({
-  name: Joi.string().min(2).max(50).pattern(/^[a-zA-Z\s]+$/).optional(),
+  name: Joi.string().min(2).max(50).pattern(/^[a-zA-Z\s'-]+$/).optional(),
   email: Joi.string().email().max(100).optional(),
   dob: Joi.string().trim().pattern(/^\d{4}-\d{2}-\d{2}$/).optional(),
   gender: Joi.string().valid(...USER_CONSTRAINTS.GENDER_VALUES).optional(),
   countryOfOrigin: Joi.string().max(USER_CONSTRAINTS.COUNTRY_MAX_LEN).optional(),
+  highestEducationLevel: Joi.string().valid(...USER_CONSTRAINTS.EDUCATION_LEVEL_VALUES).optional(),
   yearsOfEducation: Joi.number().integer().min(USER_CONSTRAINTS.EDU_YEARS_MIN).max(USER_CONSTRAINTS.EDU_YEARS_MAX).optional(),
 });
 
@@ -106,12 +110,13 @@ router.get("/me", authMiddleware, async (req, res, next) => {
 
 // PATCH /api/users/me - Update profile fields
 // Rules:
-// - name/email/countryOfOrigin/yearsOfEducation are editable
+// - name/email/countryOfOrigin/highestEducationLevel are editable
+// - yearsOfEducation accepted for legacy profile updates
 // - gender and dob can be set once, then become fixed
 router.patch("/me", authMiddleware, validate(updateMeSchema), async (req, res, next) => {
   try {
     const user = req.user;
-    const { name, email, dob, gender, countryOfOrigin, yearsOfEducation } = req.body || {};
+    const { name, email, dob, gender, countryOfOrigin, yearsOfEducation, highestEducationLevel } = req.body || {};
 
     if (dob != null && !user.dob) {
       const parsed = parseDobInput(dob);
@@ -151,6 +156,10 @@ router.patch("/me", authMiddleware, validate(updateMeSchema), async (req, res, n
 
     if (countryOfOrigin != null) {
       user.countryOfOrigin = String(countryOfOrigin).trim().toUpperCase();
+    }
+
+    if (highestEducationLevel != null) {
+      user.highestEducationLevel = highestEducationLevel;
     }
 
     if (yearsOfEducation != null) {

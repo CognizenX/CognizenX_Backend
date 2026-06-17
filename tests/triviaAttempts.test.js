@@ -16,7 +16,7 @@ describe("Trivia attempts + daily metrics", () => {
       age: 30,
       gender: "female",
       countryOfOrigin: "US",
-      yearsOfEducation: 16,
+      highestEducationLevel: "bachelor_degree",
       sessionToken,
       tokenExpiresAt: null,
     });
@@ -70,7 +70,7 @@ describe("Trivia attempts + daily metrics", () => {
       age: 30,
       gender: "female",
       countryOfOrigin: "US",
-      yearsOfEducation: 16,
+      highestEducationLevel: "bachelor_degree",
       sessionToken,
       tokenExpiresAt: null,
     });
