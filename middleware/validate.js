@@ -17,7 +17,7 @@ const validate = (schema, property = "body") => (req, res, next) => {
 };
 
 const signupSchema = Joi.object({
-  name: Joi.string().min(2).max(50).pattern(/^[a-zA-Z\s]+$/).required(),
+  name: Joi.string().min(2).max(50).pattern(/^[a-zA-Z\s'-]+$/).required(),
   email: Joi.string().email().max(100).required(),
   password: Joi.string().min(6).max(128).required(),
   // Backward compatible: older clients send `age`, newer clients send `dob`.
