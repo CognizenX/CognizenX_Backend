@@ -52,6 +52,13 @@ const UserSchema = new mongoose.Schema({
         default: "user",
     },
 
+    // True for eng/test accounts. Analytics, demand, and calibration exclude these by default.
+    isInternal: {
+        type: Boolean,
+        default: false,
+        index: true,
+    },
+
     // Session token fields
     sessionToken: { type: String, required: false },
     tokenExpiresAt: { type: Date, default: null },

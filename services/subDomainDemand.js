@@ -4,6 +4,7 @@ const TriviaAttempt = require('../models/TriviaAttempt');
 const UserQuestionStats = require('../models/UserQuestionStats');
 const UserActivity = require('../models/UserActivity');
 const { buildCategorySubDomainQuery } = require('../utils/taxonomy');
+const { excludeInternalUsers, getInternalUserIds } = require('./internalUsers');
 
 const USER_EXHAUSTION_RATIO = Number(process.env.USER_EXHAUSTION_RATIO || 0.9);
 
@@ -41,8 +42,9 @@ async function getUserCoverageMetrics(category, subDomain, bankSize) {
     return { maxUserCoverage: 0, exhaustedUserCount: 0 };
   }
 
+  const match = await excludeInternalUsers({ category, subDomain });
   const coverageRows = await UserQuestionStats.aggregate([
-    { $match: { category, subDomain } },
+    { $match: match },
     { $group: { _id: '$userId', coverage: { $sum: 1 } } },
   ]);
 
@@ -61,11 +63,11 @@ async function getUserCoverageMetrics(category, subDomain, bankSize) {
 }
 
 async function getWeeklyAttemptMetrics(category, subDomain, since) {
-  const match = {
+  const match = await excludeInternalUsers({
     category,
     subDomain,
     attemptedAt: { $gte: since },
-  };
+  });
 
   const [attemptCount, activeUsers] = await Promise.all([
     TriviaAttempt.countDocuments(match),
@@ -79,10 +81,13 @@ async function getWeeklyAttemptMetrics(category, subDomain, since) {
 }
 
 async function getPreferenceWeight(category, subDomain) {
-  const activities = await UserActivity.find(
-    { 'categories.category': category, 'categories.subDomain': subDomain },
-    { categories: 1 }
-  ).lean();
+  const internalIds = await getInternalUserIds();
+  const activityQuery =
+    internalIds.length > 0
+      ? { userId: { $nin: internalIds }, 'categories.category': category, 'categories.subDomain': subDomain }
+      : { 'categories.category': category, 'categories.subDomain': subDomain };
+
+  const activities = await UserActivity.find(activityQuery, { categories: 1 }).lean();
 
   let weight = 0;
   const now = Date.now();

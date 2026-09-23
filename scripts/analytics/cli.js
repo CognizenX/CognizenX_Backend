@@ -10,6 +10,7 @@ const { connectDatabase } = require("../../config/database");
 
 const TriviaAttempt = require("../../models/TriviaAttempt");
 const User = require("../../models/User");
+const { excludeInternalUsers } = require("../../services/internalUsers");
 
 function getArgValue(argv, name) {
   const idx = argv.indexOf(name);
@@ -85,6 +86,9 @@ async function cmdExportTrivia(argv) {
     if (until) filter.attemptedAt.$lt = new Date(until.getTime() + 24 * 60 * 60 * 1000);
   }
 
+  const includeInternal = hasFlag(argv, "--include-internal");
+  const scopedFilter = await excludeInternalUsers(filter, { includeInternal });
+
   ensureParentDir(out);
 
   const projection = {
@@ -97,7 +101,7 @@ async function cmdExportTrivia(argv) {
     attemptedAt: 1,
   };
 
-  const cursor = TriviaAttempt.find(filter, projection)
+  const cursor = TriviaAttempt.find(scopedFilter, projection)
     .sort({ attemptedAt: 1 })
     .cursor();
 
@@ -177,8 +181,11 @@ async function cmdRollupTopicDaily(argv) {
     if (until) match.attemptedAt.$lt = new Date(until.getTime() + 24 * 60 * 60 * 1000);
   }
 
+  const includeInternal = hasFlag(argv, "--include-internal");
+  const scopedMatch = await excludeInternalUsers(match, { includeInternal });
+
   const pipeline = [
-    Object.keys(match).length ? { $match: match } : null,
+    Object.keys(scopedMatch).length ? { $match: scopedMatch } : null,
     {
       $addFields: {
         day: {
