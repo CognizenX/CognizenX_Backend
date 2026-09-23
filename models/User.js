@@ -44,6 +44,14 @@ const UserSchema = new mongoose.Schema({
         max: USER_CONSTRAINTS.EDU_YEARS_MAX,
     },
 
+    // Ops role: only admin may write to the question bank or call unconstrained OpenAI generation.
+    // content_admin is reserved for P1.6 review workflow.
+    role: {
+        type: String,
+        enum: ["user", "admin", "content_admin"],
+        default: "user",
+    },
+
     // Session token fields
     sessionToken: { type: String, required: false },
     tokenExpiresAt: { type: Date, default: null },

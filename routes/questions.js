@@ -14,14 +14,16 @@ const {
   buildCategorySubDomainQuery,
   normaliseSubDomain,
 } = require("../utils/taxonomy");
+const authMiddleware = require("../middleware/auth");
+const requireAdmin = require("../middleware/requireAdmin");
 
 // Get email service for notifications
 const { sendCronAlert } = require("../services/mailer");
 
 const router = express.Router();
 
-// POST /api/add-questions - Add questions manually
-router.post("/add-questions", async (req, res, next) => {
+// POST /api/add-questions - Add questions manually (admin only)
+router.post("/add-questions", authMiddleware, requireAdmin, async (req, res, next) => {
   console.log(req.body);
 
   const { category, subDomain } = normaliseTaxonomyInput(req.body);

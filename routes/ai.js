@@ -5,11 +5,12 @@ const { ingestQuestions } = require("../services/questionIngestion");
 const { generateQuestions, generateExplanation } = require("../services/openaiService");
 const { normaliseTaxonomyInput, buildCategorySubDomainQuery } = require("../utils/taxonomy");
 const authMiddleware = require("../middleware/auth");
+const requireAdmin = require("../middleware/requireAdmin");
 
 const router = express.Router();
 
-// POST /api/generate-questions - Generate questions via OpenAI
-router.post("/generate-questions", authMiddleware, async (req, res, next) => {
+// POST /api/generate-questions - Generate questions via OpenAI (admin only)
+router.post("/generate-questions", authMiddleware, requireAdmin, async (req, res, next) => {
   try {
     const { category, subDomain } = normaliseTaxonomyInput(req.body);
     const count = Number(req.body.count || 10);
@@ -92,7 +93,11 @@ router.post("/generate-questions", authMiddleware, async (req, res, next) => {
   }
 });
 
-// POST /api/generate-explanation - Generate explanation via OpenAI
+/**
+ * Live-quiz users may request an explanation only for a real bank question
+ * (questionId + category + subDomain). Admins may call without that constraint.
+ */
+// POST /api/generate-explanation
 router.post("/generate-explanation", authMiddleware, async (req, res, next) => {
   try {
     const { question, userAnswer, correctAnswer, questionId } = req.body;
@@ -100,65 +105,69 @@ router.post("/generate-explanation", authMiddleware, async (req, res, next) => {
     if (!question || !userAnswer || !correctAnswer) {
       return res.status(400).json({ status: "error", message: "Question, user answer, and correct answer are required" });
     }
+
+    const isAdmin = req.user?.role === "admin";
+    const hasBankLookup = Boolean(questionId && category && subDomain);
+
+    if (!isAdmin && !hasBankLookup) {
+      return res.status(403).json({
+        status: "error",
+        message: "Forbidden: questionId, category, and subDomain are required",
+      });
+    }
     
-    console.log('Explanation request:', { questionId, category, subDomain, hasQuestion: !!question });
-    
-    // Try to find cached explanation if questionId, category, and subDomain are provided
-    let explanation = null;
-    if (questionId && category && subDomain) {
-      const triviaCategory = await TriviaCategory.findOne(
+    console.log('Explanation request:', { questionId, category, subDomain, hasQuestion: !!question, isAdmin });
+
+    let questionObj = null;
+    let triviaCategory = null;
+
+    if (hasBankLookup) {
+      triviaCategory = await TriviaCategory.findOne(
         buildCategorySubDomainQuery(category, subDomain)
       );
       if (triviaCategory) {
-        console.log('Found trivia category, looking for question:', questionId);
-        const questionObj = triviaCategory.questions.id(questionId);
-        if (questionObj && questionObj.explanation) {
-          console.log('Returning cached explanation');
-          // Return cached explanation
-          return res.json({ 
-            status: "success", 
-            explanation: questionObj.explanation,
-            cached: true 
-          });
-        } else if (questionObj) {
-          console.log('Question found but no cached explanation');
-        } else {
-          console.log('Question not found in category');
-        }
-      } else {
-        console.log('Trivia category not found:', { category, subDomain });
+        questionObj = triviaCategory.questions.id(questionId);
+      }
+
+      if (!isAdmin && !questionObj) {
+        return res.status(403).json({
+          status: "error",
+          message: "Forbidden: Question not found in the question bank",
+        });
+      }
+
+      if (questionObj && questionObj.explanation) {
+        console.log('Returning cached explanation');
+        return res.json({
+          status: "success",
+          explanation: questionObj.explanation,
+          cached: true,
+        });
       }
     }
     
-    // Generate new explanation
     console.log('Generating new explanation via OpenAI...');
-    explanation = await generateExplanation(question, userAnswer, correctAnswer);
+    const explanation = await generateExplanation(question, userAnswer, correctAnswer);
     console.log('Explanation generated, length:', explanation?.length);
     
-    // Save explanation to database if questionId, category, and subDomain are provided
-    if (questionId && category && subDomain && explanation) {
+    if (questionObj && triviaCategory && explanation) {
       console.log('Attempting to save explanation to database...');
-      const triviaCategory = await TriviaCategory.findOne(
-        buildCategorySubDomainQuery(category, subDomain)
-      );
-      if (triviaCategory) {
-        const questionObj = triviaCategory.questions.id(questionId);
-        if (questionObj) {
-          questionObj.explanation = explanation;
-          questionObj.explanationGeneratedAt = new Date();
-          await triviaCategory.save();
-          console.log('Explanation saved successfully to database');
-        } else {
-          console.log('Could not find question to save explanation:', questionId);
-        }
-      } else {
-        console.log('Could not find trivia category to save explanation:', { category, subDomain });
-      }
+      questionObj.explanation = explanation;
+      questionObj.explanationGeneratedAt = new Date();
+      await triviaCategory.save();
+      console.log('Explanation saved successfully to database');
+    } else if (!isAdmin) {
+      console.log('Skipping save - question missing after generation');
     } else {
-      console.log('Skipping save - missing params:', { questionId: !!questionId, category: !!category, subDomain: !!subDomain, explanation: !!explanation });
+      console.log('Skipping save - admin free-form or missing bank params:', {
+        questionId: !!questionId,
+        category: !!category,
+        subDomain: !!subDomain,
+        explanation: !!explanation,
+      });
     }
     
-    res.json({ status: "success", explanation: explanation, cached: false });
+    res.json({ status: "success", explanation, cached: false });
   } catch (error) {
     console.error('Error generating explanation:', error);
     console.error('Error stack:', error.stack);
