@@ -391,7 +391,15 @@ async function runWeeklyGeneration(generationPlan) {
     // Update metadata to reflect this run
     await updateSchedulerMetadata(totalQuestionsGenerated);
 
-    const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+    const duration = Number(((Date.now() - startTime) / 1000).toFixed(2));
+    const totalDeduped = results.reduce(
+      (sum, item) => sum + Number(item.duplicates || 0),
+      0
+    );
+    const totalExplained = results.reduce((sum, item) => {
+      const questions = Array.isArray(item.questions) ? item.questions.length : 0;
+      return sum + questions;
+    }, 0);
 
     console.log('\n' + '='.repeat(70));
     console.log('[SCHEDULER] Weekly generation COMPLETED');
@@ -401,6 +409,23 @@ async function runWeeklyGeneration(generationPlan) {
     console.log(`Questions generated: ${totalQuestionsGenerated}`);
     console.log(`Categories with questions: ${categoriesWithQuestions}/${generationPlan.length}`);
     console.log('='.repeat(70) + '\n');
+
+    try {
+      const posthog = require('./posthog');
+      posthog.capture(posthog.CRON_DISTINCT_ID, 'weekly_generation_run', {
+        week_number: weekNumber,
+        generated: totalQuestionsGenerated,
+        explained: totalExplained || totalQuestionsGenerated,
+        deduped: totalDeduped,
+        categories_processed: generationPlan.length,
+        categories_with_questions: categoriesWithQuestions,
+        duration_s: duration,
+        success: true,
+      });
+      await posthog.shutdown();
+    } catch (analyticsError) {
+      console.warn('[SCHEDULER] PostHog weekly_generation_run failed:', analyticsError?.message || analyticsError);
+    }
 
     return {
       success: true,

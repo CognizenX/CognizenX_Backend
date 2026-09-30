@@ -129,15 +129,13 @@ router.get("/random-questions", async (req, res, next) => {
       const triviaCategory = await TriviaCategory.findOne(query);
 
       if (triviaCategory && triviaCategory.questions.length > 0) {
-        let categorySavedQuestions = [];
+        let categorySavedQuestions = triviaCategory.questions.filter((q) => q.reviewExcludeFromQuiz !== true);
         if (subDomain) {
-          categorySavedQuestions = triviaCategory.questions.filter((q) => {
+          categorySavedQuestions = categorySavedQuestions.filter((q) => {
             const questionSubDomain = normaliseSubDomain(q.subDomain || triviaCategory.subDomain, category);
             const categorySubDomain = normaliseSubDomain(triviaCategory.subDomain, category);
             return questionSubDomain === subDomain || categorySubDomain === subDomain;
           });
-        } else {
-          categorySavedQuestions = triviaCategory.questions;
         }
         savedQuestions.push(...categorySavedQuestions);
       }

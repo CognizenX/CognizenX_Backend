@@ -1,19 +1,19 @@
 /**
  * Flag or unflag a user as internal by email.
  *
- *   node scripts/set-internal-user.js you@example.com
- *   node scripts/set-internal-user.js you@example.com --external
+ *   node scripts/script_P0/set-internal-user.js you@example.com
+ *   node scripts/script_P0/set-internal-user.js you@example.com --external
  */
 require('dotenv').config();
 const mongoose = require('mongoose');
-const User = require('../models/User');
+const User = require('../../models/User');
 
 async function main() {
   const email = (process.argv[2] || '').trim().toLowerCase();
   const makeExternal = process.argv.includes('--external');
 
   if (!email) {
-    console.error('Usage: node scripts/set-internal-user.js <email> [--external]');
+    console.error('Usage: node scripts/script_P0/set-internal-user.js <email> [--external]');
     process.exit(1);
   }
 

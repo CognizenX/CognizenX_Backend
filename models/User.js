@@ -59,6 +59,12 @@ const UserSchema = new mongoose.Schema({
         index: true,
     },
 
+    // Explicit analytics opt-in (PostHog). Default false until signup checkbox or Account toggle.
+    analyticsConsent: {
+        type: Boolean,
+        default: false,
+    },
+
     // Session token fields
     sessionToken: { type: String, required: false },
     tokenExpiresAt: { type: Date, default: null },

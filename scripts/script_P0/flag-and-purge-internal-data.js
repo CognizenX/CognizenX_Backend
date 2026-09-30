@@ -4,8 +4,8 @@
  * Default is dry-run (no writes).
  *
  * Usage:
- *   node scripts/flag-and-purge-internal-data.js
- *   node scripts/flag-and-purge-internal-data.js --confirm --confirm-production
+ *   node scripts/script_P0/flag-and-purge-internal-data.js
+ *   node scripts/script_P0/flag-and-purge-internal-data.js --confirm --confirm-production
  *
  * Flags:
  *   --confirm              Perform archive + purge + flag (required to mutate)
@@ -17,16 +17,16 @@ const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
 
-const User = require('../models/User');
-const TriviaAttempt = require('../models/TriviaAttempt');
-const UserQuestionStats = require('../models/UserQuestionStats');
-const GameSession = require('../models/GameSession');
-const Report = require('../models/Report');
-const UserActivity = require('../models/UserActivity');
-const SubDomainDemandSnapshot = require('../models/SubDomainDemandSnapshot');
-const SchedulerMetadata = require('../models/SchedulerMetadata');
-const { describeMongoUri } = require('../services/internalUsers');
-const { buildGenerationPlan } = require('../services/generationPlan');
+const User = require('../../models/User');
+const TriviaAttempt = require('../../models/TriviaAttempt');
+const UserQuestionStats = require('../../models/UserQuestionStats');
+const GameSession = require('../../models/GameSession');
+const Report = require('../../models/Report');
+const UserActivity = require('../../models/UserActivity');
+const SubDomainDemandSnapshot = require('../../models/SubDomainDemandSnapshot');
+const SchedulerMetadata = require('../../models/SchedulerMetadata');
+const { describeMongoUri } = require('../../services/internalUsers');
+const { buildGenerationPlan } = require('../../services/generationPlan');
 
 const BEHAVIOURAL = [
   { key: 'triviaattempts', model: TriviaAttempt, userField: 'userId' },
@@ -190,7 +190,7 @@ async function main() {
   console.log(`Demand snapshots: ${demandCount}`);
   console.log(`User exhaustion signals: ${exhaustionSignals}`);
 
-  const reportsDir = path.join(__dirname, '..', 'reports');
+  const reportsDir = path.join(__dirname, '..', '..', 'reports', 'Reports_p0');
   fs.mkdirSync(reportsDir, { recursive: true });
   const reportPath = path.join(
     reportsDir,

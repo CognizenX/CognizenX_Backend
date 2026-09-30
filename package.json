@@ -37,7 +37,8 @@
     "mern-auth-backend": "file:",
     "mongoose": "^8.8.3",
     "nodemailer": "^8.0.0",
-    "openai": "^5.17.0"
+    "openai": "^5.17.0",
+    "posthog-node": "^5.53.0"
   },
   "description": "",
   "devDependencies": {

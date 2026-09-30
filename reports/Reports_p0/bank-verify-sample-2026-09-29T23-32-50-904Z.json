@@ -1,0 +1,1903 @@
+{
+  "summary": {
+    "generatedAt": "2026-09-29T23:32:50.894Z",
+    "model": "gpt-4o",
+    "seed": 504,
+    "requested": 100,
+    "poolSize": 6345,
+    "judged": 100,
+    "failedCalls": 0,
+    "tally": {
+      "markedAnswerCorrect": 92,
+      "exactlyOne": 90,
+      "explanationSupports": 94,
+      "lowConfidence": 3,
+      "anyConcern": 10
+    },
+    "flagCounts": {
+      "ambiguous": 3,
+      "bad_explanation": 6,
+      "wrong_key": 5,
+      "dated": 1
+    },
+    "rates": {
+      "markedAnswerCorrect": 0.92,
+      "exactlyOneDefensible": 0.9,
+      "explanationSupports": 0.94,
+      "clean": 0.9
+    },
+    "tokens": {
+      "inputTokens": 27452,
+      "outputTokens": 7341
+    },
+    "listPriceUsd": 0.142,
+    "listPricePerQuestionUsd": 0.00142,
+    "fullBankListPriceUsd": 9.01,
+    "concerns": [
+      {
+        "questionId": "6a811afa79b1b15d1024554e",
+        "category": "generalknowledge",
+        "subDomain": "Economy",
+        "verdict": {
+          "marked_answer_correct": false,
+          "exactly_one_defensible_option": false,
+          "explanation_supports_answer": false,
+          "flags": [
+            "ambiguous",
+            "bad_explanation"
+          ],
+          "confidence": 0.2,
+          "reason": "The explanation lacks evidence and Tata Steel was not the first listed company; the claim is ambiguous."
+        }
+      },
+      {
+        "questionId": "673ef8b97807c37c6a9055a0",
+        "category": "geography",
+        "subDomain": "Rivers and Mountains",
+        "verdict": {
+          "marked_answer_correct": true,
+          "exactly_one_defensible_option": false,
+          "explanation_supports_answer": true,
+          "flags": [
+            "none"
+          ],
+          "confidence": 0.9,
+          "reason": "All listed rivers are associated with the Mansarovar region, supporting the marked answer."
+        }
+      },
+      {
+        "questionId": "698cc645a0905290462ab574",
+        "category": "religion",
+        "subDomain": "Hindu",
+        "verdict": {
+          "marked_answer_correct": true,
+          "exactly_one_defensible_option": false,
+          "explanation_supports_answer": true,
+          "flags": [
+            "ambiguous"
+          ],
+          "confidence": 0.7,
+          "reason": "Both 'Murali' and 'Venu' are names associated with Krishna's flute, making the options ambiguous."
+        }
+      },
+      {
+        "questionId": "6a2e146c5aec195a986b3ff9",
+        "category": "art",
+        "subDomain": "South Asian",
+        "verdict": {
+          "marked_answer_correct": false,
+          "exactly_one_defensible_option": false,
+          "explanation_supports_answer": false,
+          "flags": [
+            "wrong_key",
+            "bad_explanation"
+          ],
+          "confidence": 0.6,
+          "reason": "Pichwai is directly associated with Lord Krishna, not Phad. Phad depicts local deities and heroes, not specifically Krishna."
+        }
+      },
+      {
+        "questionId": "6809eb6cffccddbd294fa443",
+        "category": "politics",
+        "subDomain": "National",
+        "verdict": {
+          "marked_answer_correct": false,
+          "exactly_one_defensible_option": false,
+          "explanation_supports_answer": true,
+          "flags": [
+            "ambiguous"
+          ],
+          "confidence": 0.3,
+          "reason": "The term 'National Monument' is ambiguous; all options are significant U.S. monuments."
+        }
+      },
+      {
+        "questionId": "69a762fa7d4f0d0570f6ef9f",
+        "category": "history",
+        "subDomain": "history",
+        "verdict": {
+          "marked_answer_correct": false,
+          "exactly_one_defensible_option": false,
+          "explanation_supports_answer": false,
+          "flags": [
+            "wrong_key",
+            "bad_explanation"
+          ],
+          "confidence": 1,
+          "reason": "The explanation states the correct name is 'Mirza Abu Zafar Sirajuddin Muhammad Bahadur Shah Zafar', not 'Mirza Akbar'."
+        }
+      },
+      {
+        "questionId": "6984047cf9cf61c8d5895078",
+        "category": "current affairs",
+        "subDomain": "current affairs",
+        "verdict": {
+          "marked_answer_correct": false,
+          "exactly_one_defensible_option": false,
+          "explanation_supports_answer": true,
+          "flags": [
+            "dated"
+          ],
+          "confidence": 0.7,
+          "reason": "Sourav Ganguly was BCCI president, but Roger Binny succeeded him in October 2022."
+        }
+      },
+      {
+        "questionId": "6a52f662517fd32df0244ecd",
+        "category": "geography",
+        "subDomain": "States and Capitals",
+        "verdict": {
+          "marked_answer_correct": false,
+          "exactly_one_defensible_option": false,
+          "explanation_supports_answer": false,
+          "flags": [
+            "wrong_key",
+            "bad_explanation"
+          ],
+          "confidence": 0.8,
+          "reason": "Tripura is surrounded by Bangladesh on three sides, but Mizoram is not. The explanation is incorrect."
+        }
+      },
+      {
+        "questionId": "69af5dcac135bf1dd1f83c55",
+        "category": "entertainment",
+        "subDomain": "Bollywood Songs",
+        "verdict": {
+          "marked_answer_correct": false,
+          "exactly_one_defensible_option": false,
+          "explanation_supports_answer": false,
+          "flags": [
+            "wrong_key",
+            "bad_explanation"
+          ],
+          "confidence": 1,
+          "reason": "'Vande Mataram' was composed by Bankim Chandra Chatterjee, not Rabindranath Tagore. The explanation incorrectly attributes the composition to Tagore."
+        }
+      },
+      {
+        "questionId": "69a754e1afa099a6a538cfe0",
+        "category": "current affairs",
+        "subDomain": "International Relations",
+        "verdict": {
+          "marked_answer_correct": false,
+          "exactly_one_defensible_option": false,
+          "explanation_supports_answer": false,
+          "flags": [
+            "wrong_key",
+            "bad_explanation"
+          ],
+          "confidence": 1,
+          "reason": "Bangladesh is not an African nation; the question and marked answer are incorrect."
+        }
+      }
+    ]
+  },
+  "results": [
+    {
+      "questionId": "696acfea4a814ac10bce69ac",
+      "category": "religion",
+      "subDomain": "Buddhism",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Amaterasu is indeed the sun goddess in Japanese mythology, specifically in Shinto."
+      },
+      "inputTokens": 268,
+      "outputTokens": 69
+    },
+    {
+      "questionId": "69ec35e3af59bf51657fdd51",
+      "category": "generalknowledge",
+      "subDomain": "Literature",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "C. Rajagopalachari is known for his English retelling of the Mahabharata."
+      },
+      "inputTokens": 277,
+      "outputTokens": 72
+    },
+    {
+      "questionId": "698cc65fa0905290462ab63b",
+      "category": "generalknowledge",
+      "subDomain": "generalKnowledge",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Punjab is historically known as the 'Land of Five Rivers' due to the five rivers mentioned in the explanation."
+      },
+      "inputTokens": 269,
+      "outputTokens": 74
+    },
+    {
+      "questionId": "69faa756055525ce7e7ab393",
+      "category": "art",
+      "subDomain": "Western Art",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Abstract Expressionism is correctly identified as emerging in the late 1940s and emphasizing spontaneous creation."
+      },
+      "inputTokens": 280,
+      "outputTokens": 72
+    },
+    {
+      "questionId": "68fe37ece6f92d71ff060575",
+      "category": "politics",
+      "subDomain": "South Indian",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 0.9,
+        "reason": "Kerala is well-known for its spice production due to its climate and soil conditions."
+      },
+      "inputTokens": 262,
+      "outputTokens": 69
+    },
+    {
+      "questionId": "69a7620c5101111f12b01712",
+      "category": "entertainment",
+      "subDomain": "Indian TV Shows",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 0.9,
+        "reason": "Balika Vadhu was indeed a highly acclaimed show in 2008, winning multiple awards."
+      },
+      "inputTokens": 291,
+      "outputTokens": 75
+    },
+    {
+      "questionId": "6ab8797ddd78b1761d5454f8",
+      "category": "current affairs",
+      "subDomain": "Health and Environment",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 0.9,
+        "reason": "Delhi was declared the first 'Kerosene-free City' in 2014 due to its clean energy initiatives."
+      },
+      "inputTokens": 265,
+      "outputTokens": 75
+    },
+    {
+      "questionId": "696acfa74a814ac10bce6397",
+      "category": "politics",
+      "subDomain": "politics",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Switzerland is a federal republic with a system of government that includes elements of direct democracy."
+      },
+      "inputTokens": 264,
+      "outputTokens": 70
+    },
+    {
+      "questionId": "69f7c1b462bc071c09bb0f07",
+      "category": "art",
+      "subDomain": "Eastern Art",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Batik is indeed a traditional art form from Indonesia, recognized by UNESCO, and the explanation supports this."
+      },
+      "inputTokens": 269,
+      "outputTokens": 73
+    },
+    {
+      "questionId": "69a75d2e5101111f12b00be1",
+      "category": "entertainment",
+      "subDomain": "Bollywood Movies",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Ranbir Kapoor's debut film is indeed 'Saawariya', released in 2007."
+      },
+      "inputTokens": 278,
+      "outputTokens": 75
+    },
+    {
+      "questionId": "673efbdd7807c37c6a905689",
+      "category": "geography",
+      "subDomain": "Libraries and Statues",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "The Anna Centenary Library is indeed located in Chennai, Tamil Nadu, as stated in the explanation."
+      },
+      "inputTokens": 260,
+      "outputTokens": 72
+    },
+    {
+      "questionId": "69af5f2cc135bf1dd1f83efc",
+      "category": "generalknowledge",
+      "subDomain": "Literature",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "'Vande Mataram' was indeed written by Bankim Chandra Chattopadhyay and included in 'Anandamath'."
+      },
+      "inputTokens": 305,
+      "outputTokens": 81
+    },
+    {
+      "questionId": "673ef0407807c37c6a905369",
+      "category": "history",
+      "subDomain": "Ancient India",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "The Mahabharata is indeed the epic associated with the Kurukshetra War."
+      },
+      "inputTokens": 271,
+      "outputTokens": 69
+    },
+    {
+      "questionId": "6a77dfd8ed90ee84972b6ed6",
+      "category": "politics",
+      "subDomain": "National",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 0.9,
+        "reason": "Lal Bahadur Shastri is credited with initiating the Green Revolution in India during his tenure."
+      },
+      "inputTokens": 297,
+      "outputTokens": 72
+    },
+    {
+      "questionId": "673ee9e57807c37c6a905125",
+      "category": "politics",
+      "subDomain": "South Indian",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "H.D. Deve Gowda was indeed a South Indian leader who served as Prime Minister of India."
+      },
+      "inputTokens": 285,
+      "outputTokens": 72
+    },
+    {
+      "questionId": "6a811afa79b1b15d1024554e",
+      "category": "generalknowledge",
+      "subDomain": "Economy",
+      "verdict": {
+        "marked_answer_correct": false,
+        "exactly_one_defensible_option": false,
+        "explanation_supports_answer": false,
+        "flags": [
+          "ambiguous",
+          "bad_explanation"
+        ],
+        "confidence": 0.2,
+        "reason": "The explanation lacks evidence and Tata Steel was not the first listed company; the claim is ambiguous."
+      },
+      "inputTokens": 262,
+      "outputTokens": 77
+    },
+    {
+      "questionId": "6a656ac1a305995408517cad",
+      "category": "politics",
+      "subDomain": "National",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "The explanation correctly states that the 'Five-Year Plan' is named for its five-year duration."
+      },
+      "inputTokens": 273,
+      "outputTokens": 71
+    },
+    {
+      "questionId": "673ee96c7807c37c6a905115",
+      "category": "politics",
+      "subDomain": "North Indian",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Sardar Vallabhbhai Patel is widely known as the 'Iron Man of India' for his role in integrating princely states into India."
+      },
+      "inputTokens": 298,
+      "outputTokens": 81
+    },
+    {
+      "questionId": "6a8a551f88b78dcfe630d21e",
+      "category": "politics",
+      "subDomain": "National",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Dr. Rajendra Prasad was indeed the first President of India after the Constitution was enforced on January 26, 1950."
+      },
+      "inputTokens": 279,
+      "outputTokens": 83
+    },
+    {
+      "questionId": "6a6ea5afca455c8307844740",
+      "category": "religion",
+      "subDomain": "Sikhism",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Harmandir Sahib is indeed the largest and most significant Sikh temple in India."
+      },
+      "inputTokens": 278,
+      "outputTokens": 72
+    },
+    {
+      "questionId": "673ef8b97807c37c6a9055a0",
+      "category": "geography",
+      "subDomain": "Rivers and Mountains",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": false,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 0.9,
+        "reason": "All listed rivers are associated with the Mansarovar region, supporting the marked answer."
+      },
+      "inputTokens": 267,
+      "outputTokens": 69
+    },
+    {
+      "questionId": "697b8f8267f9b6f8eeb5ee6e",
+      "category": "politics",
+      "subDomain": "politics",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "The Janata Party formed the first non-Congress government in India in 1977, as explained."
+      },
+      "inputTokens": 271,
+      "outputTokens": 74
+    },
+    {
+      "questionId": "6a2e14aa5aec195a986b401e",
+      "category": "cuisine",
+      "subDomain": "World Cuisines",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Gulab Jamun is traditionally made from milk solids, specifically khoya, as explained."
+      },
+      "inputTokens": 268,
+      "outputTokens": 71
+    },
+    {
+      "questionId": "6ab87992dd78b1761d5454fb",
+      "category": "current affairs",
+      "subDomain": "Health and Environment",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "The Clean India Mission was launched on October 2, 2014, as stated in the explanation."
+      },
+      "inputTokens": 285,
+      "outputTokens": 75
+    },
+    {
+      "questionId": "69a755c7afa099a6a538d100",
+      "category": "entertainment",
+      "subDomain": "Indian TV Shows",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Satyamev Jayate is known for Aamir Khan addressing social issues, matching the explanation."
+      },
+      "inputTokens": 282,
+      "outputTokens": 72
+    },
+    {
+      "questionId": "698cc645a0905290462ab574",
+      "category": "religion",
+      "subDomain": "Hindu",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": false,
+        "explanation_supports_answer": true,
+        "flags": [
+          "ambiguous"
+        ],
+        "confidence": 0.7,
+        "reason": "Both 'Murali' and 'Venu' are names associated with Krishna's flute, making the options ambiguous."
+      },
+      "inputTokens": 252,
+      "outputTokens": 76
+    },
+    {
+      "questionId": "69a75ed15101111f12b00fad",
+      "category": "entertainment",
+      "subDomain": "Bollywood Songs",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 0.9,
+        "reason": "The song is known for its length, and 20 minutes is a recognized duration."
+      },
+      "inputTokens": 293,
+      "outputTokens": 69
+    },
+    {
+      "questionId": "69ffefeb5084101365070562",
+      "category": "history",
+      "subDomain": "Freedom Movement",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 0.9,
+        "reason": "The explanation correctly identifies the emergence of parallel governments during 1942-1945."
+      },
+      "inputTokens": 287,
+      "outputTokens": 73
+    },
+    {
+      "questionId": "6a28a05702edc9a2514a6108",
+      "category": "religion",
+      "subDomain": "Sikhism",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Hola Mohalla is indeed a festival celebrating valor and bravery, as initiated by Guru Gobind Singh."
+      },
+      "inputTokens": 281,
+      "outputTokens": 74
+    },
+    {
+      "questionId": "698a6032c8656c5688ca075a",
+      "category": "politics",
+      "subDomain": "politics",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "The Swaraj Party aimed to enter legislatures to obstruct British rule, aligning with 'Entry into legislatures'."
+      },
+      "inputTokens": 267,
+      "outputTokens": 77
+    },
+    {
+      "questionId": "6a2e14575aec195a986b3fed",
+      "category": "art",
+      "subDomain": "South Asian",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Shah Jahan is historically recognized for commissioning the Taj Mahal and supporting the arts."
+      },
+      "inputTokens": 271,
+      "outputTokens": 71
+    },
+    {
+      "questionId": "69a7535fafa099a6a538cd23",
+      "category": "history",
+      "subDomain": "Medieval India",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Historical records attribute the construction of Adhai Din Ka Jhonpra to Qutb-ud-din Aibak, and the explanation aligns with this information."
+      },
+      "inputTokens": 304,
+      "outputTokens": 89
+    },
+    {
+      "questionId": "6a289f0e02edc9a2514a60a2",
+      "category": "religion",
+      "subDomain": "Jainism",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Anekantavada is indeed the Jain concept of many-sided reality, acknowledging multiple perspectives."
+      },
+      "inputTokens": 294,
+      "outputTokens": 71
+    },
+    {
+      "questionId": "69f18255f63b5594df5a5f29",
+      "category": "art",
+      "subDomain": "Western Art",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 0.9,
+        "reason": "Nandalal Bose is known for depicting Gandhi's life, including the Dandi March, aligning with the explanation."
+      },
+      "inputTokens": 285,
+      "outputTokens": 75
+    },
+    {
+      "questionId": "6a289fc502edc9a2514a60c8",
+      "category": "religion",
+      "subDomain": "Jainism",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Svetambara sect believes women can achieve moksha, unlike Digambara."
+      },
+      "inputTokens": 257,
+      "outputTokens": 67
+    },
+    {
+      "questionId": "6a092a48f0ba54772a7015f4",
+      "category": "history",
+      "subDomain": "Freedom Movement",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Gandhi's Satyagraha was indeed the spiritual basis for the freedom struggle."
+      },
+      "inputTokens": 271,
+      "outputTokens": 70
+    },
+    {
+      "questionId": "6a289ebf02edc9a2514a608b",
+      "category": "religion",
+      "subDomain": "Jainism",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "The Dilwara Temples are indeed located in Mount Abu, Rajasthan, as supported by the explanation."
+      },
+      "inputTokens": 272,
+      "outputTokens": 72
+    },
+    {
+      "questionId": "69a752acafa099a6a538cc7c",
+      "category": "generalknowledge",
+      "subDomain": "Indian Literature",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Maulana Abul Kalam Azad was indeed the first Education Minister of India and a prominent poet."
+      },
+      "inputTokens": 286,
+      "outputTokens": 72
+    },
+    {
+      "questionId": "69a75c365101111f12b0097b",
+      "category": "current affairs",
+      "subDomain": "Economic Affairs",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Jawaharlal Nehru introduced the Five-Year Plan in 1951, inspired by the Soviet model."
+      },
+      "inputTokens": 285,
+      "outputTokens": 75
+    },
+    {
+      "questionId": "68000834a7562068f74e41d2",
+      "category": "geography",
+      "subDomain": "National Parks",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Zion National Park is famous for its sandstone cliffs in red, pink, and cream hues."
+      },
+      "inputTokens": 267,
+      "outputTokens": 71
+    },
+    {
+      "questionId": "69a72c131dd0c426e38b0ea1",
+      "category": "politics",
+      "subDomain": "South Indian",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Kerala is widely recognized as the 'Spice Garden of India' due to its significant spice production."
+      },
+      "inputTokens": 273,
+      "outputTokens": 73
+    },
+    {
+      "questionId": "698a6241c8656c5688ca2021",
+      "category": "entertainment",
+      "subDomain": "entertainment",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Kaun Banega Crorepati is based on 'Who Wants to Be a Millionaire?' and first aired in 2000."
+      },
+      "inputTokens": 290,
+      "outputTokens": 83
+    },
+    {
+      "questionId": "69a762ad5101111f12b01839",
+      "category": "history",
+      "subDomain": "Modern India",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "'India After Gandhi' is indeed authored by Ramachandra Guha, and the explanation correctly supports this."
+      },
+      "inputTokens": 272,
+      "outputTokens": 73
+    },
+    {
+      "questionId": "6a2e146c5aec195a986b3ff9",
+      "category": "art",
+      "subDomain": "South Asian",
+      "verdict": {
+        "marked_answer_correct": false,
+        "exactly_one_defensible_option": false,
+        "explanation_supports_answer": false,
+        "flags": [
+          "wrong_key",
+          "bad_explanation"
+        ],
+        "confidence": 0.6,
+        "reason": "Pichwai is directly associated with Lord Krishna, not Phad. Phad depicts local deities and heroes, not specifically Krishna."
+      },
+      "inputTokens": 272,
+      "outputTokens": 85
+    },
+    {
+      "questionId": "6a4080ed5838e0759c809175",
+      "category": "art",
+      "subDomain": "Eastern Art",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Madhubani art is indeed from Bihar, and the explanation correctly supports this."
+      },
+      "inputTokens": 265,
+      "outputTokens": 69
+    },
+    {
+      "questionId": "6a3746d3af0d251ae8011c8f",
+      "category": "art",
+      "subDomain": "Western Art",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 0.9,
+        "reason": "The Salar Jung Museum is known for its diverse collection, including European art from the Renaissance."
+      },
+      "inputTokens": 301,
+      "outputTokens": 74
+    },
+    {
+      "questionId": "6a289bd202edc9a2514a5fb9",
+      "category": "religion",
+      "subDomain": "Christianity",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 0.9,
+        "reason": "The explanation aligns with the common belief that Thomas the Apostle introduced Christianity to India in the 1st Century AD."
+      },
+      "inputTokens": 276,
+      "outputTokens": 75
+    },
+    {
+      "questionId": "6a09299af0ba54772a700dea",
+      "category": "entertainment",
+      "subDomain": "Bollywood Songs",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Abhijeet Bhattacharya is the playback singer for the song in 'Yes Boss'."
+      },
+      "inputTokens": 292,
+      "outputTokens": 76
+    },
+    {
+      "questionId": "69f17aaa0343383335301976",
+      "category": "politics",
+      "subDomain": "South Indian",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Jayalalithaa was indeed a South Indian actress and served as Chief Minister of Tamil Nadu."
+      },
+      "inputTokens": 273,
+      "outputTokens": 76
+    },
+    {
+      "questionId": "673ef24e7807c37c6a905438",
+      "category": "history",
+      "subDomain": "Medieval India",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Balban is historically recognized for introducing 'Sijda' and 'Paibos' to emphasize royal authority."
+      },
+      "inputTokens": 285,
+      "outputTokens": 79
+    },
+    {
+      "questionId": "6a2e15315aec195a986b4053",
+      "category": "culture",
+      "subDomain": "South Asian",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Kathakali is indeed a traditional dance from Kerala, known for elaborate costumes and makeup."
+      },
+      "inputTokens": 274,
+      "outputTokens": 74
+    },
+    {
+      "questionId": "69a75fca5101111f12b011a5",
+      "category": "history",
+      "subDomain": "Ancient India",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Bharatanatyam is indeed a classical dance form that originated in the temples of Tamil Nadu."
+      },
+      "inputTokens": 275,
+      "outputTokens": 76
+    },
+    {
+      "questionId": "69faaa92055525ce7e7ab450",
+      "category": "cuisine",
+      "subDomain": "South Asian",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Salim Ali is widely recognized as the 'Bird Man of India' for his contributions to ornithology."
+      },
+      "inputTokens": 274,
+      "outputTokens": 74
+    },
+    {
+      "questionId": "6a52f5c6517fd32df0244dc6",
+      "category": "politics",
+      "subDomain": "National",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Indira Gandhi, from the Indian National Congress, was Prime Minister during the 1974 nuclear test."
+      },
+      "inputTokens": 264,
+      "outputTokens": 73
+    },
+    {
+      "questionId": "673f027a7807c37c6a905792",
+      "category": "generalknowledge",
+      "subDomain": "Indian Literature",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "'Sea of Poppies' is indeed authored by Amitav Ghosh, as stated in the explanation."
+      },
+      "inputTokens": 276,
+      "outputTokens": 74
+    },
+    {
+      "questionId": "69c86e255a5ebaaac7afc699",
+      "category": "religion",
+      "subDomain": "Hindu",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Hanuman is indeed the devoted follower of Lord Rama in the Ramayana."
+      },
+      "inputTokens": 268,
+      "outputTokens": 65
+    },
+    {
+      "questionId": "6a289aa002edc9a2514a5f62",
+      "category": "religion",
+      "subDomain": "Buddhism",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Ajanta and Ellora Caves are indeed in Maharashtra, as stated in the explanation."
+      },
+      "inputTokens": 266,
+      "outputTokens": 68
+    },
+    {
+      "questionId": "6809eb6cffccddbd294fa443",
+      "category": "politics",
+      "subDomain": "National",
+      "verdict": {
+        "marked_answer_correct": false,
+        "exactly_one_defensible_option": false,
+        "explanation_supports_answer": true,
+        "flags": [
+          "ambiguous"
+        ],
+        "confidence": 0.3,
+        "reason": "The term 'National Monument' is ambiguous; all options are significant U.S. monuments."
+      },
+      "inputTokens": 261,
+      "outputTokens": 71
+    },
+    {
+      "questionId": "69840235e02675f05936983d",
+      "category": "sports",
+      "subDomain": "sports",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Kepler Wessels was indeed the captain during South Africa's readmission in 1991."
+      },
+      "inputTokens": 275,
+      "outputTokens": 72
+    },
+    {
+      "questionId": "69a762fa7d4f0d0570f6ef9f",
+      "category": "history",
+      "subDomain": "history",
+      "verdict": {
+        "marked_answer_correct": false,
+        "exactly_one_defensible_option": false,
+        "explanation_supports_answer": false,
+        "flags": [
+          "wrong_key",
+          "bad_explanation"
+        ],
+        "confidence": 1,
+        "reason": "The explanation states the correct name is 'Mirza Abu Zafar Sirajuddin Muhammad Bahadur Shah Zafar', not 'Mirza Akbar'."
+      },
+      "inputTokens": 286,
+      "outputTokens": 87
+    },
+    {
+      "questionId": "673ef8667807c37c6a90558c",
+      "category": "geography",
+      "subDomain": "Rivers and Mountains",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Kosi River is historically known as the 'Sorrow of Bihar' due to its flooding."
+      },
+      "inputTokens": 257,
+      "outputTokens": 69
+    },
+    {
+      "questionId": "69af5fd7c135bf1dd1f83f8c",
+      "category": "current affairs",
+      "subDomain": "Health and Environment",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Smallpox was declared eradicated in India in 1980, aligning with the explanation and marked answer."
+      },
+      "inputTokens": 267,
+      "outputTokens": 73
+    },
+    {
+      "questionId": "69ffef7650841013650700e0",
+      "category": "politics",
+      "subDomain": "North Indian",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Mussoorie is indeed located in Uttarakhand, and the explanation correctly supports this."
+      },
+      "inputTokens": 263,
+      "outputTokens": 70
+    },
+    {
+      "questionId": "6aaf3ea47a284ab648cb4392",
+      "category": "religion",
+      "subDomain": "Hindu",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Holi is widely recognized for its colorful celebrations with water and powders, fitting the description perfectly."
+      },
+      "inputTokens": 271,
+      "outputTokens": 73
+    },
+    {
+      "questionId": "6984047cf9cf61c8d5895078",
+      "category": "current affairs",
+      "subDomain": "current affairs",
+      "verdict": {
+        "marked_answer_correct": false,
+        "exactly_one_defensible_option": false,
+        "explanation_supports_answer": true,
+        "flags": [
+          "dated"
+        ],
+        "confidence": 0.7,
+        "reason": "Sourav Ganguly was BCCI president, but Roger Binny succeeded him in October 2022."
+      },
+      "inputTokens": 282,
+      "outputTokens": 78
+    },
+    {
+      "questionId": "69faa77f055525ce7e7ab3b6",
+      "category": "art",
+      "subDomain": "Western Art",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "The Renaissance is widely recognized to have originated in Italy during the 14th century."
+      },
+      "inputTokens": 275,
+      "outputTokens": 69
+    },
+    {
+      "questionId": "69a759075101111f12b001af",
+      "category": "generalknowledge",
+      "subDomain": "Literature",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "The explanation correctly identifies the setting as a Himalayan village, matching the marked answer."
+      },
+      "inputTokens": 270,
+      "outputTokens": 68
+    },
+    {
+      "questionId": "6a811a7679b1b15d10245416",
+      "category": "geography",
+      "subDomain": "States and Capitals",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Telangana was formed in 2014 with Hyderabad as its capital."
+      },
+      "inputTokens": 255,
+      "outputTokens": 64
+    },
+    {
+      "questionId": "6a52f662517fd32df0244ecd",
+      "category": "geography",
+      "subDomain": "States and Capitals",
+      "verdict": {
+        "marked_answer_correct": false,
+        "exactly_one_defensible_option": false,
+        "explanation_supports_answer": false,
+        "flags": [
+          "wrong_key",
+          "bad_explanation"
+        ],
+        "confidence": 0.8,
+        "reason": "Tripura is surrounded by Bangladesh on three sides, but Mizoram is not. The explanation is incorrect."
+      },
+      "inputTokens": 266,
+      "outputTokens": 79
+    },
+    {
+      "questionId": "69a7520bafa099a6a538cba9",
+      "category": "history",
+      "subDomain": "Modern India",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Kalpana Chawla was the first Indian-born woman in space, flying with NASA in 1997."
+      },
+      "inputTokens": 268,
+      "outputTokens": 75
+    },
+    {
+      "questionId": "696acfa04a814ac10bce633e",
+      "category": "politics",
+      "subDomain": "politics",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Boris Yeltsin was indeed the first President of the Russian Federation, serving from 1991 to 1999."
+      },
+      "inputTokens": 267,
+      "outputTokens": 81
+    },
+    {
+      "questionId": "69f17a9303433833353018ad",
+      "category": "politics",
+      "subDomain": "North Indian",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Jawaharlal Nehru was indeed the first Prime Minister of India and was from Uttar Pradesh."
+      },
+      "inputTokens": 282,
+      "outputTokens": 73
+    },
+    {
+      "questionId": "69af5dcac135bf1dd1f83c55",
+      "category": "entertainment",
+      "subDomain": "Bollywood Songs",
+      "verdict": {
+        "marked_answer_correct": false,
+        "exactly_one_defensible_option": false,
+        "explanation_supports_answer": false,
+        "flags": [
+          "wrong_key",
+          "bad_explanation"
+        ],
+        "confidence": 1,
+        "reason": "'Vande Mataram' was composed by Bankim Chandra Chatterjee, not Rabindranath Tagore. The explanation incorrectly attributes the composition to Tagore."
+      },
+      "inputTokens": 290,
+      "outputTokens": 91
+    },
+    {
+      "questionId": "673ef00f7807c37c6a90533a",
+      "category": "history",
+      "subDomain": "Ancient India",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "The Upanishads are indeed philosophical texts, and the explanation correctly supports this."
+      },
+      "inputTokens": 258,
+      "outputTokens": 68
+    },
+    {
+      "questionId": "69a754e1afa099a6a538cfe0",
+      "category": "current affairs",
+      "subDomain": "International Relations",
+      "verdict": {
+        "marked_answer_correct": false,
+        "exactly_one_defensible_option": false,
+        "explanation_supports_answer": false,
+        "flags": [
+          "wrong_key",
+          "bad_explanation"
+        ],
+        "confidence": 1,
+        "reason": "Bangladesh is not an African nation; the question and marked answer are incorrect."
+      },
+      "inputTokens": 253,
+      "outputTokens": 72
+    },
+    {
+      "questionId": "673f02e87807c37c6a9057a7",
+      "category": "generalknowledge",
+      "subDomain": "Science and Technology in India",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "C.V. Raman won the Nobel Prize in Physics in 1930 for the Raman Effect, matching the explanation and options."
+      },
+      "inputTokens": 276,
+      "outputTokens": 77
+    },
+    {
+      "questionId": "673ef0407807c37c6a905367",
+      "category": "history",
+      "subDomain": "Ancient India",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 0.9,
+        "reason": "Kanishka is known for issuing gold coins extensively, unlike earlier rulers."
+      },
+      "inputTokens": 285,
+      "outputTokens": 67
+    },
+    {
+      "questionId": "698a5f61c8656c5688c9feca",
+      "category": "generalknowledge",
+      "subDomain": "generalKnowledge",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "The Sun Temple is indeed located in Konark, Odisha, and the explanation correctly supports this."
+      },
+      "inputTokens": 264,
+      "outputTokens": 75
+    },
+    {
+      "questionId": "69a75f025101111f12b00ff9",
+      "category": "entertainment",
+      "subDomain": "Bollywood Songs",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 0.9,
+        "reason": "The explanation aligns with the marked answer and supports the claim about The Guardian's list."
+      },
+      "inputTokens": 307,
+      "outputTokens": 73
+    },
+    {
+      "questionId": "69a75f465101111f12b010b8",
+      "category": "entertainment",
+      "subDomain": "Bollywood Songs",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "'Jai Ho' won the Oscar for 'Slumdog Millionaire'. Explanation and marked answer align."
+      },
+      "inputTokens": 287,
+      "outputTokens": 71
+    },
+    {
+      "questionId": "69af5e54c135bf1dd1f83d50",
+      "category": "history",
+      "subDomain": "Freedom Movement",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Motilal Nehru and Chittaranjan Das indeed led the Swaraj Party after the Non-Cooperation Movement ended."
+      },
+      "inputTokens": 321,
+      "outputTokens": 78
+    },
+    {
+      "questionId": "6994c9cd1752cd56283e428a",
+      "category": "entertainment",
+      "subDomain": "entertainment",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "'Tughlaq' is indeed written by Girish Karnad, making the marked answer correct and well-supported by the explanation."
+      },
+      "inputTokens": 269,
+      "outputTokens": 77
+    },
+    {
+      "questionId": "6a37470daf0d251ae8011cad",
+      "category": "art",
+      "subDomain": "Architecture Sculpture",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 0.9,
+        "reason": "Jaipur is known for its jali work, particularly in its historic architecture."
+      },
+      "inputTokens": 278,
+      "outputTokens": 68
+    },
+    {
+      "questionId": "673eefd57807c37c6a90531f",
+      "category": "history",
+      "subDomain": "Ancient India",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Dholavira is indeed known for its advanced water management system, as supported by the explanation."
+      },
+      "inputTokens": 279,
+      "outputTokens": 72
+    },
+    {
+      "questionId": "697b902a67f9b6f8eeb5f06d",
+      "category": "generalknowledge",
+      "subDomain": "generalKnowledge",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Ved Vyas is widely recognized as the author of the Mahabharata."
+      },
+      "inputTokens": 279,
+      "outputTokens": 67
+    },
+    {
+      "questionId": "697b902a67f9b6f8eeb5f070",
+      "category": "generalknowledge",
+      "subDomain": "generalKnowledge",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Karnataka is widely recognized as the largest coffee producer in India, producing over 70% of the country's coffee."
+      },
+      "inputTokens": 247,
+      "outputTokens": 76
+    },
+    {
+      "questionId": "69b0b2777d4f0d0570f6f4a0",
+      "category": "history",
+      "subDomain": "Modern India",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Mother India was the first Indian film nominated for an Oscar in 1957."
+      },
+      "inputTokens": 253,
+      "outputTokens": 68
+    },
+    {
+      "questionId": "69f16d84dd4dfcd3687052ab",
+      "category": "art",
+      "subDomain": "Western Art",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Amrita Sher-Gil studied at the Slade School and incorporated Western techniques, matching the question and explanation."
+      },
+      "inputTokens": 277,
+      "outputTokens": 74
+    },
+    {
+      "questionId": "681cbb66dd911c9743ead368",
+      "category": "politics",
+      "subDomain": "North Indian",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "The Golden Temple is indeed located in Amritsar, Punjab, and the explanation correctly supports this."
+      },
+      "inputTokens": 261,
+      "outputTokens": 72
+    },
+    {
+      "questionId": "673ef3027807c37c6a90547c",
+      "category": "history",
+      "subDomain": "Modern India",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "The Swadeshi Movement focused on boycotting British goods and promoting Indian goods, aligning with the explanation."
+      },
+      "inputTokens": 272,
+      "outputTokens": 74
+    },
+    {
+      "questionId": "69a61815ba3d2f8fea3b3a67",
+      "category": "religion",
+      "subDomain": "Hindu",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Shiva is widely recognized as the god of destruction and transformation in Hindu mythology."
+      },
+      "inputTokens": 258,
+      "outputTokens": 68
+    },
+    {
+      "questionId": "69a75d1f47b006553bde5435",
+      "category": "entertainment",
+      "subDomain": "Bollywood Movies",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Anushka Shetty played the lead role in 'Arundhati'."
+      },
+      "inputTokens": 270,
+      "outputTokens": 67
+    },
+    {
+      "questionId": "698cc645a0905290462ab571",
+      "category": "religion",
+      "subDomain": "Hindu",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Hanuman is well-known as a devoted follower of Lord Rama in the Ramayana."
+      },
+      "inputTokens": 259,
+      "outputTokens": 67
+    },
+    {
+      "questionId": "6aaf3ea47a284ab648cb4393",
+      "category": "religion",
+      "subDomain": "Hindu",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "The Ganges is widely recognized as the holiest river in Hinduism, and the explanation supports this."
+      },
+      "inputTokens": 265,
+      "outputTokens": 73
+    },
+    {
+      "questionId": "6984b0da4fc37e424fb0c9bf",
+      "category": "sports",
+      "subDomain": "sports",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "England and Wales hosted the ICC World Cup 2019, as confirmed by the explanation."
+      },
+      "inputTokens": 255,
+      "outputTokens": 70
+    },
+    {
+      "questionId": "673efb837807c37c6a90565e",
+      "category": "geography",
+      "subDomain": "Libraries and Statues",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Saraswathi Mahal Library is indeed famous for its ancient manuscripts, as supported by the explanation."
+      },
+      "inputTokens": 286,
+      "outputTokens": 76
+    },
+    {
+      "questionId": "6a938f88e8e7d0951babc4f3",
+      "category": "religion",
+      "subDomain": "Sikhism",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 0.9,
+        "reason": "Gurmukhi is the script used for the Guru Granth Sahib, and the explanation correctly supports this."
+      },
+      "inputTokens": 264,
+      "outputTokens": 74
+    },
+    {
+      "questionId": "69a760c65101111f12b0148a",
+      "category": "sports",
+      "subDomain": "Cricket",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Ricky Ponting is widely known by the nickname 'Punter' due to his interest in betting, aligning with the explanation."
+      },
+      "inputTokens": 265,
+      "outputTokens": 78
+    },
+    {
+      "questionId": "69a757b3bcf87bbeb12033fb",
+      "category": "entertainment",
+      "subDomain": "Bollywood Songs",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Rabindranath Tagore composed both the lyrics and music for 'Jana Gana Mana'."
+      },
+      "inputTokens": 279,
+      "outputTokens": 77
+    },
+    {
+      "questionId": "6a289a0502edc9a2514a5f36",
+      "category": "religion",
+      "subDomain": "Buddhism",
+      "verdict": {
+        "marked_answer_correct": true,
+        "exactly_one_defensible_option": true,
+        "explanation_supports_answer": true,
+        "flags": [
+          "none"
+        ],
+        "confidence": 1,
+        "reason": "Bodh Gaya is widely recognized as the place where Buddha attained enlightenment."
+      },
+      "inputTokens": 278,
+      "outputTokens": 65
+    }
+  ]
+}

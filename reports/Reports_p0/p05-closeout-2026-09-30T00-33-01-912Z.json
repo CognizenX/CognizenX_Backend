@@ -1,0 +1,398 @@
+{
+  "generatedAt": "2026-09-30T00:33:01.911Z",
+  "applied": false,
+  "fixes": {
+    "writes": 0,
+    "markdown": [],
+    "duplicateOptions": [],
+    "subdomainAligned": 0,
+    "subdomainLeft": [
+      {
+        "key": "entertainment | Bollywood Songs | indianMusic",
+        "count": 34
+      },
+      {
+        "key": "entertainment | Bollywood Movies | tollywood",
+        "count": 31
+      },
+      {
+        "key": "Scienftrfvrfce | Physics | Geography",
+        "count": 1
+      },
+      {
+        "key": "Scienftrfvrfce | Physics | History",
+        "count": 1
+      },
+      {
+        "key": "Scienftrfvrfce | Physics | Entertainment",
+        "count": 1
+      }
+    ],
+    "shuffled": 0,
+    "orderSensitiveLeft": 0,
+    "positionBefore": [
+      1588,
+      1593,
+      1576,
+      1588
+    ],
+    "positionAfter": [
+      1588,
+      1593,
+      1576,
+      1588
+    ]
+  },
+  "strata": {
+    "byCategory": [
+      {
+        "name": "art",
+        "n": 236,
+        "wrongKey": {
+          "n": 236,
+          "k": 27,
+          "rate": 0.1144,
+          "low": 0.0798,
+          "high": 0.1613
+        },
+        "anyConcern": {
+          "n": 236,
+          "k": 28,
+          "rate": 0.1186,
+          "low": 0.0834,
+          "high": 0.1661
+        }
+      },
+      {
+        "name": "cuisine",
+        "n": 191,
+        "wrongKey": {
+          "n": 191,
+          "k": 8,
+          "rate": 0.0419,
+          "low": 0.0214,
+          "high": 0.0805
+        },
+        "anyConcern": {
+          "n": 191,
+          "k": 12,
+          "rate": 0.0628,
+          "low": 0.0363,
+          "high": 0.1066
+        }
+      },
+      {
+        "name": "culture",
+        "n": 130,
+        "wrongKey": {
+          "n": 130,
+          "k": 8,
+          "rate": 0.0615,
+          "low": 0.0315,
+          "high": 0.1167
+        },
+        "anyConcern": {
+          "n": 130,
+          "k": 10,
+          "rate": 0.0769,
+          "low": 0.0423,
+          "high": 0.1358
+        }
+      },
+      {
+        "name": "current affairs",
+        "n": 611,
+        "wrongKey": {
+          "n": 611,
+          "k": 76,
+          "rate": 0.1244,
+          "low": 0.1005,
+          "high": 0.1529
+        },
+        "anyConcern": {
+          "n": 611,
+          "k": 82,
+          "rate": 0.1342,
+          "low": 0.1095,
+          "high": 0.1635
+        }
+      },
+      {
+        "name": "entertainment",
+        "n": 769,
+        "wrongKey": {
+          "n": 769,
+          "k": 93,
+          "rate": 0.1209,
+          "low": 0.0998,
+          "high": 0.1459
+        },
+        "anyConcern": {
+          "n": 769,
+          "k": 102,
+          "rate": 0.1326,
+          "low": 0.1105,
+          "high": 0.1584
+        }
+      },
+      {
+        "name": "generalknowledge",
+        "n": 646,
+        "wrongKey": {
+          "n": 646,
+          "k": 33,
+          "rate": 0.0511,
+          "low": 0.0366,
+          "high": 0.0709
+        },
+        "anyConcern": {
+          "n": 646,
+          "k": 37,
+          "rate": 0.0573,
+          "low": 0.0418,
+          "high": 0.0779
+        }
+      },
+      {
+        "name": "geography",
+        "n": 791,
+        "wrongKey": {
+          "n": 791,
+          "k": 66,
+          "rate": 0.0834,
+          "low": 0.0661,
+          "high": 0.1048
+        },
+        "anyConcern": {
+          "n": 791,
+          "k": 81,
+          "rate": 0.1024,
+          "low": 0.0832,
+          "high": 0.1255
+        }
+      },
+      {
+        "name": "history",
+        "n": 893,
+        "wrongKey": {
+          "n": 893,
+          "k": 40,
+          "rate": 0.0448,
+          "low": 0.0331,
+          "high": 0.0604
+        },
+        "anyConcern": {
+          "n": 893,
+          "k": 48,
+          "rate": 0.0538,
+          "low": 0.0408,
+          "high": 0.0705
+        }
+      },
+      {
+        "name": "politics",
+        "n": 882,
+        "wrongKey": {
+          "n": 882,
+          "k": 54,
+          "rate": 0.0612,
+          "low": 0.0472,
+          "high": 0.079
+        },
+        "anyConcern": {
+          "n": 882,
+          "k": 67,
+          "rate": 0.076,
+          "low": 0.0603,
+          "high": 0.0953
+        }
+      },
+      {
+        "name": "religion",
+        "n": 898,
+        "wrongKey": {
+          "n": 898,
+          "k": 66,
+          "rate": 0.0735,
+          "low": 0.0582,
+          "high": 0.0924
+        },
+        "anyConcern": {
+          "n": 898,
+          "k": 75,
+          "rate": 0.0835,
+          "low": 0.0671,
+          "high": 0.1034
+        }
+      },
+      {
+        "name": "Scienftrfvrfce",
+        "n": 77,
+        "wrongKey": {
+          "n": 77,
+          "k": 9,
+          "rate": 0.1169,
+          "low": 0.0627,
+          "high": 0.2075
+        },
+        "anyConcern": {
+          "n": 77,
+          "k": 9,
+          "rate": 0.1169,
+          "low": 0.0627,
+          "high": 0.2075
+        }
+      },
+      {
+        "name": "sports",
+        "n": 221,
+        "wrongKey": {
+          "n": 221,
+          "k": 18,
+          "rate": 0.0814,
+          "low": 0.0521,
+          "high": 0.1251
+        },
+        "anyConcern": {
+          "n": 221,
+          "k": 19,
+          "rate": 0.086,
+          "low": 0.0557,
+          "high": 0.1304
+        }
+      }
+    ],
+    "byQuarter": [
+      {
+        "name": "2024-Q4",
+        "n": 775,
+        "wrongKey": {
+          "n": 775,
+          "k": 30,
+          "rate": 0.0387,
+          "low": 0.0272,
+          "high": 0.0547
+        },
+        "anyConcern": {
+          "n": 775,
+          "k": 40,
+          "rate": 0.0516,
+          "low": 0.0381,
+          "high": 0.0695
+        }
+      },
+      {
+        "name": "2025-Q2",
+        "n": 238,
+        "wrongKey": {
+          "n": 238,
+          "k": 10,
+          "rate": 0.042,
+          "low": 0.023,
+          "high": 0.0756
+        },
+        "anyConcern": {
+          "n": 238,
+          "k": 15,
+          "rate": 0.063,
+          "low": 0.0386,
+          "high": 0.1014
+        }
+      },
+      {
+        "name": "2025-Q4",
+        "n": 112,
+        "wrongKey": {
+          "n": 112,
+          "k": 7,
+          "rate": 0.0625,
+          "low": 0.0306,
+          "high": 0.1234
+        },
+        "anyConcern": {
+          "n": 112,
+          "k": 8,
+          "rate": 0.0714,
+          "low": 0.0366,
+          "high": 0.1346
+        }
+      },
+      {
+        "name": "2026-Q1",
+        "n": 3072,
+        "wrongKey": {
+          "n": 3072,
+          "k": 252,
+          "rate": 0.082,
+          "low": 0.0728,
+          "high": 0.0923
+        },
+        "anyConcern": {
+          "n": 3072,
+          "k": 284,
+          "rate": 0.0924,
+          "low": 0.0827,
+          "high": 0.1032
+        }
+      },
+      {
+        "name": "2026-Q2",
+        "n": 1477,
+        "wrongKey": {
+          "n": 1477,
+          "k": 130,
+          "rate": 0.088,
+          "low": 0.0746,
+          "high": 0.1036
+        },
+        "anyConcern": {
+          "n": 1477,
+          "k": 144,
+          "rate": 0.0975,
+          "low": 0.0834,
+          "high": 0.1137
+        }
+      },
+      {
+        "name": "2026-Q3",
+        "n": 671,
+        "wrongKey": {
+          "n": 671,
+          "k": 69,
+          "rate": 0.1028,
+          "low": 0.0821,
+          "high": 0.1281
+        },
+        "anyConcern": {
+          "n": 671,
+          "k": 79,
+          "rate": 0.1177,
+          "low": 0.0955,
+          "high": 0.1443
+        }
+      }
+    ],
+    "overall": {
+      "n": 6345,
+      "wrongKey": {
+        "n": 6345,
+        "k": 498,
+        "rate": 0.0785,
+        "low": 0.0721,
+        "high": 0.0854
+      },
+      "anyConcern": {
+        "n": 6345,
+        "k": 570,
+        "rate": 0.0898,
+        "low": 0.083,
+        "high": 0.0971
+      }
+    }
+  },
+  "defectDefinition": {
+    "wrongKey": "gpt-4o marked_answer_correct is not true",
+    "anyConcern": "wrong key, not exactly one defensible option, explanation does not support the answer, or a non-none flag",
+    "interval": "Wilson 95% interval"
+  }
+}

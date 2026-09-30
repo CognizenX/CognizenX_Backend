@@ -66,6 +66,8 @@ function publicUser(user) {
     highestEducationLevel: user.highestEducationLevel ?? null,
     yearsOfEducation: user.yearsOfEducation ?? null,
     educationDisplay: formatUserEducation(user),
+    isInternal: Boolean(user.isInternal),
+    analyticsConsent: Boolean(user.analyticsConsent),
     locks: {
       dob: Boolean(user.dob),
       gender: Boolean(user.gender),
@@ -81,6 +83,7 @@ const updateMeSchema = Joi.object({
   countryOfOrigin: Joi.string().max(USER_CONSTRAINTS.COUNTRY_MAX_LEN).optional(),
   highestEducationLevel: Joi.string().valid(...USER_CONSTRAINTS.EDUCATION_LEVEL_VALUES).optional(),
   yearsOfEducation: Joi.number().integer().min(USER_CONSTRAINTS.EDU_YEARS_MIN).max(USER_CONSTRAINTS.EDU_YEARS_MAX).optional(),
+  analyticsConsent: Joi.boolean().optional(),
 });
 
 // IMPORTANT: define fixed routes like /me BEFORE dynamic routes like /:id.
@@ -116,7 +119,16 @@ router.get("/me", authMiddleware, async (req, res, next) => {
 router.patch("/me", authMiddleware, validate(updateMeSchema), async (req, res, next) => {
   try {
     const user = req.user;
-    const { name, email, dob, gender, countryOfOrigin, yearsOfEducation, highestEducationLevel } = req.body || {};
+    const {
+      name,
+      email,
+      dob,
+      gender,
+      countryOfOrigin,
+      yearsOfEducation,
+      highestEducationLevel,
+      analyticsConsent,
+    } = req.body || {};
 
     if (dob != null && !user.dob) {
       const parsed = parseDobInput(dob);
@@ -174,6 +186,10 @@ router.patch("/me", authMiddleware, validate(updateMeSchema), async (req, res, n
       user.dob = parseDobInput(dob);
       // Clear legacy age so DOB becomes the source of truth.
       user.age = undefined;
+    }
+
+    if (typeof analyticsConsent === "boolean") {
+      user.analyticsConsent = analyticsConsent;
     }
 
     await user.save();

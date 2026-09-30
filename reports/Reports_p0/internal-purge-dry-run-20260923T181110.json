@@ -1,0 +1,52 @@
+{
+  "generatedAt": "2026-09-23T18:11:14.704Z",
+  "mode": "dry-run",
+  "uri": {
+    "host": "triviaquestions.gfew0.mongodb.net",
+    "dbName": "dementia_database",
+    "isLocal": false
+  },
+  "stamp": "20260923T181110",
+  "users": {
+    "total": 77,
+    "alreadyInternal": 0,
+    "willFlagInternal": 77
+  },
+  "behavioural": {
+    "triviaattempts": {
+      "liveCollection": "triviaattempts",
+      "archiveCollection": "triviaattempts_internal_archive_20260923T181110",
+      "matchingRows": 2123,
+      "totalRows": 2173
+    },
+    "userquestionstats": {
+      "liveCollection": "userquestionstats",
+      "archiveCollection": "userquestionstats_internal_archive_20260923T181110",
+      "matchingRows": 1317,
+      "totalRows": 1353
+    },
+    "gamesessions": {
+      "liveCollection": "gamesessions",
+      "archiveCollection": "gamesessions_internal_archive_20260923T181110",
+      "matchingRows": 28,
+      "totalRows": 28
+    },
+    "reports": {
+      "liveCollection": "reports",
+      "archiveCollection": "reports_internal_archive_20260923T181110",
+      "matchingRows": 0,
+      "totalRows": 0
+    },
+    "useractivities": {
+      "liveCollection": "useractivities",
+      "archiveCollection": "useractivities_internal_archive_20260923T181110",
+      "matchingRows": 45,
+      "totalRows": 46
+    }
+  },
+  "demandSnapshots": 645,
+  "userExhaustionSignals": 0,
+  "actions": [
+    "none (dry-run)"
+  ]
+}

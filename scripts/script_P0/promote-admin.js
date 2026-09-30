@@ -2,20 +2,20 @@
  * Promote a user to admin by email.
  *
  * Usage:
- *   node scripts/promote-admin.js you@example.com
- *   ADMIN_BOOTSTRAP_EMAIL=you@example.com node scripts/promote-admin.js
+ *   node scripts/script_P0/promote-admin.js you@example.com
+ *   ADMIN_BOOTSTRAP_EMAIL=you@example.com node scripts/script_P0/promote-admin.js
  *
  * Requires MONGO_URI / MONGO_URL in the environment (or .env).
  */
 require('dotenv').config();
 const mongoose = require('mongoose');
-const User = require('../models/User');
+const User = require('../../models/User');
 
 async function main() {
   const email = (process.argv[2] || process.env.ADMIN_BOOTSTRAP_EMAIL || '').trim().toLowerCase();
   if (!email) {
-    console.error('Usage: node scripts/promote-admin.js <email>');
-    console.error('   or: ADMIN_BOOTSTRAP_EMAIL=<email> node scripts/promote-admin.js');
+    console.error('Usage: node scripts/script_P0/promote-admin.js <email>');
+    console.error('   or: ADMIN_BOOTSTRAP_EMAIL=<email> node scripts/script_P0/promote-admin.js');
     process.exit(1);
   }
 

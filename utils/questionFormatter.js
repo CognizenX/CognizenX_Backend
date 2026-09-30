@@ -64,13 +64,23 @@ function deduplicateAgainst(newQuestions, existingQuestions, logPrefix = '') {
 
 function normaliseForResponse(q) {
   const plain = q.toObject ? q.toObject() : { ...q };
+  const {
+    reviewStatus,
+    reviewFlags,
+    reviewConfidence,
+    reviewReason,
+    reviewExcludeFromQuiz,
+    reviewModel,
+    reviewedAt,
+    ...publicQuestion
+  } = plain;
   return {
-    ...plain,
-    aiGenerated: plain.aiGenerated !== undefined ? plain.aiGenerated : false,
-    difficulty: plain.difficulty || 'medium',
-    validated: plain.validated !== undefined ? plain.validated : true,
-    correct_answer: plain.correct_answer || plain.correctAnswer || '',
-    correctAnswer: plain.correct_answer || plain.correctAnswer || '',
+    ...publicQuestion,
+    aiGenerated: publicQuestion.aiGenerated !== undefined ? publicQuestion.aiGenerated : false,
+    difficulty: publicQuestion.difficulty || 'medium',
+    validated: publicQuestion.validated !== undefined ? publicQuestion.validated : true,
+    correct_answer: publicQuestion.correct_answer || publicQuestion.correctAnswer || '',
+    correctAnswer: publicQuestion.correct_answer || publicQuestion.correctAnswer || '',
   };
 }
 

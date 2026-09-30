@@ -1,0 +1,114 @@
+{
+  "generatedAt": "2026-09-23T18:12:15.651Z",
+  "mode": "confirm",
+  "uri": {
+    "host": "triviaquestions.gfew0.mongodb.net",
+    "dbName": "dementia_database",
+    "isLocal": false
+  },
+  "stamp": "20260923T181212",
+  "archiveEntireBehavioural": true,
+  "users": {
+    "total": 77,
+    "alreadyInternal": 0,
+    "willFlagInternal": 77
+  },
+  "behavioural": {
+    "triviaattempts": {
+      "liveCollection": "triviaattempts",
+      "archiveCollection": "triviaattempts_internal_archive_20260923T181212",
+      "matchingRows": 2123,
+      "orphanRows": 50,
+      "totalRows": 2173,
+      "rowsToArchive": 2173
+    },
+    "userquestionstats": {
+      "liveCollection": "userquestionstats",
+      "archiveCollection": "userquestionstats_internal_archive_20260923T181212",
+      "matchingRows": 1317,
+      "orphanRows": 36,
+      "totalRows": 1353,
+      "rowsToArchive": 1353
+    },
+    "gamesessions": {
+      "liveCollection": "gamesessions",
+      "archiveCollection": "gamesessions_internal_archive_20260923T181212",
+      "matchingRows": 28,
+      "orphanRows": 0,
+      "totalRows": 28,
+      "rowsToArchive": 28
+    },
+    "reports": {
+      "liveCollection": "reports",
+      "archiveCollection": "reports_internal_archive_20260923T181212",
+      "matchingRows": 0,
+      "orphanRows": 0,
+      "totalRows": 0,
+      "rowsToArchive": 0
+    },
+    "useractivities": {
+      "liveCollection": "useractivities",
+      "archiveCollection": "useractivities_internal_archive_20260923T181212",
+      "matchingRows": 45,
+      "orphanRows": 1,
+      "totalRows": 46,
+      "rowsToArchive": 46
+    }
+  },
+  "demandSnapshots": 645,
+  "userExhaustionSignals": 0,
+  "actions": [
+    "archive entire behavioural collections (includes orphans)",
+    "empty live behavioural collections",
+    "set isInternal=true on all existing users",
+    "delete SubDomainDemandSnapshot rows",
+    "delete userExhaustionSignal SchedulerMetadata rows",
+    "rebuild demand snapshots via buildGenerationPlan (coverage-only with zero activity)"
+  ],
+  "archiveResults": {
+    "triviaattempts": {
+      "archived": 2173
+    },
+    "userquestionstats": {
+      "archived": 1353
+    },
+    "gamesessions": {
+      "archived": 28
+    },
+    "reports": {
+      "archived": 0
+    },
+    "useractivities": {
+      "archived": 46
+    }
+  },
+  "deleteResults": {
+    "triviaattempts": 2173,
+    "userquestionstats": 1353,
+    "gamesessions": 28,
+    "reports": 0,
+    "useractivities": 46
+  },
+  "usersFlagged": {
+    "matched": 77,
+    "modified": 77
+  },
+  "demandCleared": 645,
+  "exhaustionSignalsCleared": 0,
+  "rebuild": {
+    "cronRunId": "p0.2-rebuild-20260923T181212",
+    "snapshots": 43,
+    "totalPlanned": 0,
+    "planSize": 0
+  },
+  "after": {
+    "internalUsers": 77,
+    "live": {
+      "triviaattempts": 0,
+      "userquestionstats": 0,
+      "gamesessions": 0,
+      "reports": 0,
+      "useractivities": 0
+    }
+  }
+}

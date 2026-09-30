@@ -1,0 +1,422 @@
+{
+  "generatedAt": "2026-09-29T23:26:53.171Z",
+  "totalQuestions": 6345,
+  "pass1": {
+    "issueCounts": {
+      "markdown": 2,
+      "subdomain_mismatch": 502,
+      "duplicate_options": 1
+    },
+    "issueExamples": {
+      "markdown": {
+        "category": "politics",
+        "subDomain": "North Indian",
+        "questionId": "673ee8ea7807c37c6a9050b9",
+        "optionCount": 4
+      },
+      "subdomain_mismatch": {
+        "category": "politics",
+        "subDomain": "South Indian",
+        "questionId": "69a75825bcf87bbeb1203464",
+        "optionCount": 4
+      },
+      "duplicate_options": {
+        "category": "religion",
+        "subDomain": "Christianity",
+        "questionId": "6a289b9302edc9a2514a5fa7",
+        "optionCount": 4
+      }
+    },
+    "answerPosition": {
+      "counts": [
+        4515,
+        898,
+        592,
+        340
+      ],
+      "shareFirst": 0.7116,
+      "positioned": 6345
+    }
+  },
+  "pass2": {
+    "missingEmbedding": 0,
+    "purgeCandidatePairs": 0,
+    "reviewClusterCount": 743,
+    "questionsInReviewClusters": 2184,
+    "largestClusters": [
+      {
+        "category": "geography",
+        "subDomain": "States and Capitals",
+        "size": 55,
+        "questionIds": [
+          "673ef6f97807c37c6a9054e5",
+          "673ef74a7807c37c6a9054fb",
+          "673ef7cc7807c37c6a905545",
+          "696acfca4a814ac10bce687d",
+          "697ed696ddd38428c9b695d9",
+          "697ed696ddd38428c9b695da",
+          "697ed696ddd38428c9b695dd",
+          "697ed6bfe895f24806c2756a",
+          "697ed6bfe895f24806c2756b",
+          "697ed6bfe895f24806c2756e",
+          "697ed6bfe895f24806c2756f",
+          "69882163ac1ca0f6042ef638",
+          "69882163ac1ca0f6042ef639",
+          "69882163ac1ca0f6042ef63e",
+          "69a6771bff8abfac766140d6",
+          "69a7588fbcf87bbeb12034d5",
+          "69a7588fbcf87bbeb12034d6",
+          "69af5ea8c135bf1dd1f83e73",
+          "69af5ea8c135bf1dd1f83e75",
+          "69af5ea8c135bf1dd1f83e78",
+          "69b0e39e8b193190b538c6c3",
+          "6a092a5ef0ba54772a7016bb",
+          "6a092a5ef0ba54772a7016bf",
+          "6a24d59399ec62037182ffb9",
+          "6a52f63f517fd32df0244ec3",
+          "6a52f651517fd32df0244ec6",
+          "6a52f651517fd32df0244ec8",
+          "6a52f651517fd32df0244eca",
+          "6a5c30a8b7d5772acc1340c2",
+          "6a5c30a8b7d5772acc1340c5",
+          "6a5c30a8b7d5772acc1340c6",
+          "6a5c30beb7d5772acc1340cb",
+          "6a5c30beb7d5772acc1340cd",
+          "6a5c30beb7d5772acc1340ce",
+          "6a656b82a305995408517dd7",
+          "6a656b82a305995408517dd9",
+          "6a656b82a305995408517ddb",
+          "6a656b82a305995408517ddc",
+          "6a656b82a305995408517ddd",
+          "6a656b9fa305995408517de1",
+          "6a656b9fa305995408517de4",
+          "6a77e073ed90ee84972b6fba",
+          "6a77e073ed90ee84972b6fbf",
+          "6a77e0aced90ee84972b6fc5",
+          "6a77e0aced90ee84972b6fc6",
+          "6a77e0aced90ee84972b6fc9",
+          "6a811a4c79b1b15d1024540f",
+          "6a811a6279b1b15d10245412",
+          "6a811a7679b1b15d10245417",
+          "6a811a8179b1b15d1024541c",
+          "6a811a8c79b1b15d1024541e",
+          "6a8a558b88b78dcfe630d324",
+          "6a9cca742f05d27e55593a57",
+          "6aa604f6fe6bc6cbdf0ba88a",
+          "6aa60520fe6bc6cbdf0ba895"
+        ]
+      },
+      {
+        "category": "art",
+        "subDomain": "Western Art",
+        "size": 24,
+        "questionIds": [
+          "69f16d84dd4dfcd3687052a5",
+          "69f16d84dd4dfcd3687052a7",
+          "69f16d84dd4dfcd3687052aa",
+          "69f18255f63b5594df5a5f25",
+          "69f18255f63b5594df5a5f29",
+          "6a374687af0d251ae8011c67",
+          "6a374687af0d251ae8011c69",
+          "6a374687af0d251ae8011c70",
+          "6a3746a5af0d251ae8011c72",
+          "6a3746a5af0d251ae8011c74",
+          "6a3746a5af0d251ae8011c76",
+          "6a3746a5af0d251ae8011c7a",
+          "6a3746bdaf0d251ae8011c7d",
+          "6a3746bdaf0d251ae8011c7f",
+          "6a3746bdaf0d251ae8011c80",
+          "6a3746bdaf0d251ae8011c83",
+          "6a3746d3af0d251ae8011c89",
+          "6a3746d3af0d251ae8011c8d",
+          "6a3746d3af0d251ae8011c8e",
+          "6a3746d3af0d251ae8011c90",
+          "6a3746ebaf0d251ae8011c93",
+          "6a3746ebaf0d251ae8011c94",
+          "6a3746ebaf0d251ae8011c98",
+          "6a3746f6af0d251ae8011c9b"
+        ]
+      },
+      {
+        "category": "religion",
+        "subDomain": "Sikhism",
+        "size": 20,
+        "questionIds": [
+          "673f06b87807c37c6a90584b",
+          "6a28a00c02edc9a2514a60f5",
+          "6a28a00c02edc9a2514a60f9",
+          "6a28a03302edc9a2514a6101",
+          "6a28a05702edc9a2514a6107",
+          "6a28a0d102edc9a2514a611d",
+          "6a28a0d102edc9a2514a611e",
+          "6a28a0d102edc9a2514a6120",
+          "6a28a0fd02edc9a2514a6125",
+          "6a28a15602edc9a2514a6133",
+          "6a28a17902edc9a2514a613b",
+          "6a6ea520ca455c830784471a",
+          "6a6ea540ca455c8307844724",
+          "6a6ea540ca455c8307844727",
+          "6a6ea55aca455c830784472f",
+          "6a6ea590ca455c830784473b",
+          "6a938f5be8e7d0951babc4e7",
+          "6a938f88e8e7d0951babc4f3",
+          "6a938fa1e8e7d0951babc4fa",
+          "6a938fb8e8e7d0951babc505"
+        ]
+      },
+      {
+        "category": "geography",
+        "subDomain": "National Parks",
+        "size": 19,
+        "questionIds": [
+          "673efa037807c37c6a9055eb",
+          "673efa037807c37c6a9055ec",
+          "673efa037807c37c6a9055f4",
+          "673efa957807c37c6a905616",
+          "673efad77807c37c6a905657",
+          "67f6d3b4a9ed1eea9ffe2bfd",
+          "69a667e9ff8abfac76613be0",
+          "69a667e9ff8abfac76613be1",
+          "69a72bfe1dd0c426e38b0dcd",
+          "69b0e5f9e5e355bdcce0a0a9",
+          "69b0e5f9e5e355bdcce0a0af",
+          "69a758bcbcf87bbeb12034ed",
+          "69a758bcbcf87bbeb12034f1",
+          "69a758bcbcf87bbeb12034f2",
+          "69af5ed4c135bf1dd1f83ea4",
+          "69ec359eaf59bf51657fdaf5",
+          "69ec359eaf59bf51657fdafa",
+          "69ec359eaf59bf51657fdafc",
+          "6a24d5b899ec62037183012b"
+        ]
+      },
+      {
+        "category": "geography",
+        "subDomain": "Libraries and Statues",
+        "size": 17,
+        "questionIds": [
+          "673efb837807c37c6a90565b",
+          "673efb837807c37c6a90565e",
+          "673efb837807c37c6a905663",
+          "673efbdd7807c37c6a90568c",
+          "673efc407807c37c6a9056ca",
+          "681960cdcfb2432229ded6fa",
+          "681960cdcfb2432229ded700",
+          "69a7539fafa099a6a538cd91",
+          "69a7539fafa099a6a538cd94",
+          "69a7539fafa099a6a538cd9d",
+          "69a7539fafa099a6a538cd9e",
+          "69a7539fafa099a6a538cda3",
+          "69a7598a5101111f12b00332",
+          "69a7598a5101111f12b00333",
+          "69a7598a5101111f12b0033a",
+          "69a763a81dd0c426e38b1c18",
+          "69a758d6bcf87bbeb12034fd"
+        ]
+      },
+      {
+        "category": "sports",
+        "subDomain": "sports",
+        "size": 16,
+        "questionIds": [
+          "697b8fb767f9b6f8eeb5ef7e",
+          "697b8fb767f9b6f8eeb5ef7f",
+          "697b8fb767f9b6f8eeb5ef82",
+          "69840235e02675f05936983f",
+          "69840462f9cf61c8d5895038",
+          "69840462f9cf61c8d589503d",
+          "6984b0da4fc37e424fb0c9b9",
+          "698a5f4dc8656c5688c9fc97",
+          "698a5f7cc8656c5688ca00f5",
+          "698a6056c8656c5688ca08be",
+          "698a6056c8656c5688ca08c0",
+          "698a61efc8656c5688ca1758",
+          "698a61efc8656c5688ca175c",
+          "698a61fcc8656c5688ca198c",
+          "698a61fcc8656c5688ca1990",
+          "6994ee58edd12ce3d2d0411e"
+        ]
+      },
+      {
+        "category": "politics",
+        "subDomain": "National",
+        "size": 15,
+        "questionIds": [
+          "696acf8c4a814ac10bce5e11",
+          "698a62a3b288f2290a37b055",
+          "698a632cc8656c5688ca3184",
+          "6994c9ca1752cd56283e41db",
+          "6995eaf138c6fd0e36156d74",
+          "69a47c267d4f0d0570f6ee80",
+          "69a760505101111f12b01322",
+          "69b0e30e8b193190b538c51a",
+          "6a52f5db517fd32df0244dcc",
+          "6a52f5fd517fd32df0244dd1",
+          "6a77dfbeed90ee84972b6ed2",
+          "6a77dfd8ed90ee84972b6ed8",
+          "6a77e01eed90ee84972b6ee1",
+          "6a9cc9d42f05d27e55593937",
+          "6a9cca082f05d27e55593941"
+        ]
+      },
+      {
+        "category": "religion",
+        "subDomain": "Hindu",
+        "size": 13,
+        "questionIds": [
+          "673f04e07807c37c6a90582c",
+          "69a7528dafa099a6a538cc4c",
+          "69af5f64c135bf1dd1f83f26",
+          "69a6682bff8abfac76613e48",
+          "69c86e255a5ebaaac7afc699",
+          "6984048cf9cf61c8d58950da",
+          "698a6090c8656c5688ca0ab0",
+          "698a620bc8656c5688ca1ad9",
+          "698cc645a0905290462ab571",
+          "698cc645a0905290462ab579",
+          "6aaf3ec57a284ab648cb439b",
+          "6aaf3edc7a284ab648cb43a0",
+          "6aaf3f237a284ab648cb43ba"
+        ]
+      },
+      {
+        "category": "current affairs",
+        "subDomain": "Economic Affairs",
+        "size": 12,
+        "questionIds": [
+          "698a6253f779e0861bf21eac",
+          "69a72c241dd0c426e38b0f04",
+          "69a75492afa099a6a538cf50",
+          "69a75492afa099a6a538cf52",
+          "69a75bde5101111f12b008d5",
+          "69a75c055101111f12b00918",
+          "69a75c485101111f12b009ee",
+          "69a75c4d5101111f12b00a54",
+          "69a7633f1dd0c426e38b173c",
+          "69af5f90c135bf1dd1f83f52",
+          "69b0e47c8b193190b538c7f7",
+          "69b0e47c8b193190b538c7fe"
+        ]
+      },
+      {
+        "category": "religion",
+        "subDomain": "Sikhism",
+        "size": 12,
+        "questionIds": [
+          "673f06b87807c37c6a90584e",
+          "6a28a03302edc9a2514a60fe",
+          "6a28a0fd02edc9a2514a6122",
+          "6a28a1ca02edc9a2514a6147",
+          "6a6ea520ca455c830784471b",
+          "6a6ea540ca455c8307844728",
+          "6a6ea5afca455c8307844740",
+          "6a6ea5c4ca455c8307844744",
+          "6a6ea5ffca455c8307844751",
+          "6a938f5be8e7d0951babc4e8",
+          "6a938fa1e8e7d0951babc4fc",
+          "6a939001e8e7d0951babc518"
+        ]
+      },
+      {
+        "category": "politics",
+        "subDomain": "National",
+        "size": 11,
+        "questionIds": [
+          "696acf8c4a814ac10bce5e14",
+          "696ad0f1248e2eab23fa1be2",
+          "698a6257f779e0861bf22285",
+          "6994ef6bedd12ce3d2d047df",
+          "6977e4876764898721a77850",
+          "69a760aa5101111f12b01466",
+          "6a77dfa2ed90ee84972b6ece",
+          "6a77dfd8ed90ee84972b6ed7",
+          "6a8a54f088b78dcfe630d219",
+          "6a8a551f88b78dcfe630d21f",
+          "6a9cc9b82f05d27e55593931"
+        ]
+      },
+      {
+        "category": "sports",
+        "subDomain": "Cricket",
+        "size": 11,
+        "questionIds": [
+          "691b8554f3e6050fc4d26200",
+          "6977d961f5d1d215a786273a",
+          "6977da0cf5d1d215a7862855",
+          "6977da0cf5d1d215a786285a",
+          "6977db99f5d1d215a7862a85",
+          "6977dba6f5d1d215a7862b3d",
+          "6977e77c205b443de4ac3e19",
+          "69b0e6ace5e355bdcce0a4e2",
+          "6a52f691517fd32df0244fb1",
+          "6a52f6a6517fd32df0244fb6",
+          "6a52f6a6517fd32df0244fb8"
+        ]
+      },
+      {
+        "category": "politics",
+        "subDomain": "National",
+        "size": 10,
+        "questionIds": [
+          "673eec757807c37c6a905222",
+          "673eeca67807c37c6a905259",
+          "696acf8c4a814ac10bce5e0f",
+          "696acf8c4a814ac10bce5e12",
+          "6977e982205b443de4ac43fb",
+          "69795a73e78ee95410e8e5ca",
+          "6994c9461752cd56283e35e8",
+          "69f17a760343383335301815",
+          "6a656aa6a305995408517ca9",
+          "6a8a551f88b78dcfe630d21e"
+        ]
+      },
+      {
+        "category": "geography",
+        "subDomain": "States and Capitals",
+        "size": 9,
+        "questionIds": [
+          "673ef7877807c37c6a90551c",
+          "673ef7877807c37c6a90551f",
+          "673ef8137807c37c6a905578",
+          "69a6180dba3d2f8fea3b3a31",
+          "69f17b200343383335301d97",
+          "6a52f63f517fd32df0244ebf",
+          "6a656b9fa305995408517de3",
+          "6a77e073ed90ee84972b6fbe",
+          "6aa6050bfe6bc6cbdf0ba893"
+        ]
+      },
+      {
+        "category": "geography",
+        "subDomain": "States and Capitals",
+        "size": 9,
+        "questionIds": [
+          "697ed696ddd38428c9b695d6",
+          "69a6771bff8abfac766140d5",
+          "69a72bc11dd0c426e38b0bd8",
+          "69ed7949b506325da8bdf81a",
+          "6a5c30beb7d5772acc1340ca",
+          "6a5c30cfb7d5772acc1340d2",
+          "6a811a4c79b1b15d1024540a",
+          "6a9cca3e2f05d27e55593a47",
+          "6a9cca552f05d27e55593a4d"
+        ]
+      }
+    ]
+  },
+  "pass3Cost": {
+    "modelNote": "Verifier should not be the generator model (gpt-4). Output assumes a 120-token JSON verdict.",
+    "questions": 6345,
+    "inputTokens": 1965293,
+    "outputTokens": 761400,
+    "contentChars": {
+      "p50": 329,
+      "p95": 453
+    },
+    "listPriceUsd": {
+      "gpt-4o": 12.53,
+      "gpt-4o-mini": 0.75,
+      "gpt-4": 104.64
+    }
+  }
+}

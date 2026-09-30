@@ -52,7 +52,18 @@ router.get("/get-user-id", authMiddleware, async (req, res) => {
 });
 router.post("/signup", validate(signupSchema), async (req, res, next) => {
   try {
-    const { name, email, password, dob, age, gender, countryOfOrigin, yearsOfEducation, highestEducationLevel } = req.body;
+    const {
+      name,
+      email,
+      password,
+      dob,
+      age,
+      gender,
+      countryOfOrigin,
+      yearsOfEducation,
+      highestEducationLevel,
+      analyticsConsent,
+    } = req.body;
 
     console.log("Signup attempt for email:", email);
 
@@ -96,6 +107,7 @@ router.post("/signup", validate(signupSchema), async (req, res, next) => {
       countryOfOrigin,
       highestEducationLevel: highestEducationLevel || undefined,
       yearsOfEducation: yearsOfEducation != null ? yearsOfEducation : undefined,
+      analyticsConsent: Boolean(analyticsConsent),
     });
 
     // Save the user to database
@@ -269,14 +281,25 @@ router.post('/reset-password', async (req, res) => {
 router.delete("/delete-account", authMiddleware, async (req, res, next) => {
   try {
     const userId = req.user._id;
+    const posthog = require("../services/posthog");
+
+    // Best-effort analytics cleanup before dropping the user row (full GDPR path is P0.9).
+    try {
+      posthog.capture(String(userId), "account_deleted");
+      await posthog.deletePersonByDistinctId(String(userId));
+      await posthog.shutdown();
+    } catch (analyticsError) {
+      console.warn(
+        "PostHog cleanup on account delete failed:",
+        analyticsError?.message || analyticsError
+      );
+    }
 
     // 1) Remove any activity logs (optional)
     await UserActivity.deleteMany({ userId });
 
     // 2) Remove the user
     await User.findByIdAndDelete(userId);
-
-    // 3) (Optionally) You could also revoke tokens, clear cookies, etc.
 
     console.log("Account deleted successfully for user:", userId);
     res.json({ message: "Account deleted successfully." });

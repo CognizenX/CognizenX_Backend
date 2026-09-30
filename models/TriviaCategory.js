@@ -58,6 +58,36 @@ const QuestionSchema = new mongoose.Schema({
     type: Date,
     required: false,
   },
+  // P0.5 verifier queue. Absent means not reviewed. Quiz skips reviewExcludeFromQuiz only.
+  reviewStatus: {
+    type: String,
+    enum: ["flagged", "removed", "cleared"],
+    required: false,
+  },
+  reviewFlags: {
+    type: [String],
+    required: false,
+  },
+  reviewConfidence: {
+    type: Number,
+    required: false,
+  },
+  reviewReason: {
+    type: String,
+    required: false,
+  },
+  reviewExcludeFromQuiz: {
+    type: Boolean,
+    required: false,
+  },
+  reviewModel: {
+    type: String,
+    required: false,
+  },
+  reviewedAt: {
+    type: Date,
+    required: false,
+  },
   embedding: {
     type: [Number],
     required: false,

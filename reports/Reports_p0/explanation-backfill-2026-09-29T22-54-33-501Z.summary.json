@@ -1,0 +1,12 @@
+{
+  "startedAt": "2026-09-29T22:54:33.502Z",
+  "selected": 2,
+  "written": 2,
+  "skippedNoAnswer": 0,
+  "failed": 0,
+  "inputTokens": 243,
+  "outputTokens": 77,
+  "logPath": "/Users/shulabhbhattarai/CognigenX/backend/reports/Reports_p0/explanation-backfill-2026-09-29T22-54-33-501Z.jsonl",
+  "finishedAt": "2026-09-29T22:54:39.547Z",
+  "estimatedUsd": 0.0119
+}

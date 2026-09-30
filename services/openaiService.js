@@ -242,7 +242,7 @@ const generateQuestions = async (category, subDomain, count = 10, options = {}) 
   }
 };
 
-const generateExplanation = async (question, userAnswer, correctAnswer) => {
+const generateExplanation = async (question, userAnswer, correctAnswer, options = {}) => {
   try {
     const openai = getOpenAIClient();
     
@@ -271,6 +271,13 @@ Provide a SHORT, concise explanation (1-2 sentences maximum, under 50 words). Ex
     const content = completion.choices[0]?.message?.content?.trim();
     if (!content) {
       throw new Error('No explanation generated');
+    }
+
+    if (options.includeUsage) {
+      return {
+        explanation: content,
+        usage: completion.usage || null,
+      };
     }
 
     return content;

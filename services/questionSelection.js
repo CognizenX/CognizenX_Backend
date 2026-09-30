@@ -121,9 +121,9 @@ async function loadBankQuestions({ categories, subDomain }) {
     const triviaCategory = await TriviaCategory.findOne(query);
     if (!triviaCategory || triviaCategory.questions.length === 0) continue;
 
-    let categoryQuestions = triviaCategory.questions;
+    let categoryQuestions = triviaCategory.questions.filter((q) => q.reviewExcludeFromQuiz !== true);
     if (subDomain) {
-      categoryQuestions = triviaCategory.questions.filter((q) => {
+      categoryQuestions = categoryQuestions.filter((q) => {
         const questionSubDomain = normaliseSubDomain(q.subDomain || triviaCategory.subDomain, category);
         const categorySubDomain = normaliseSubDomain(triviaCategory.subDomain, category);
         return questionSubDomain === subDomain || categorySubDomain === subDomain;
