@@ -62,8 +62,14 @@ app.use(cors());
 app.use(bodyParser.json({ limit: '10mb' }));
 
 // Rate limiting (configured in config/rateLimiter.js)
-app.use('/api/auth', authLimiter);
+// Dual-mount: store builds use /api/auth; P0 clients use /api/v1/auth.
+app.use("/api/auth", authLimiter);
+app.use("/api/v1/auth", authLimiter);
 app.use(globalLimiter);
+
+// P0.6A — optional force-update gate (off unless MIN_SUPPORTED_APP_VERSION is set)
+const { requireMinAppVersion } = require("./middleware/minAppVersion");
+app.use(requireMinAppVersion);
 
 // Ensure MongoDB is connected before handling requests (fixes serverless buffering timeout)
 app.use((req, res, next) => {
@@ -86,9 +92,12 @@ app.get("/", (req, res) => {
   res.json({ message: "Backend running on Vercel! Base route /" });
 });
 
-// Sample route
+// Sample route (unversioned + v1)
 app.get("/api", (req, res) => {
   res.json({ message: "Backend running on Vercel!" });
+});
+app.get("/api/v1", (req, res) => {
+  res.json({ message: "Backend running on Vercel!", apiVersion: "v1" });
 });
 
 // Connect to database (skipped in test mode)
@@ -105,15 +114,23 @@ const reportsRoutes = require("./routes/reports");
 const userQuizRoutes = require("./routes/userQuiz");
 const gamesRoutes = require("./routes/games");
 
-app.use("/api/auth", authRoutes);
-app.use("/api", questionsRoutes);
-app.use("/api", userQuizRoutes);
-app.use("/api", aiRoutes);
-app.use("/api/users", usersRoutes);
-app.use("/api", activityRoutes);
-app.use("/api/trivia", triviaRoutes);
-app.use("/api/games", gamesRoutes);
-app.use("/api", reportsRoutes);
+// P0.6A — same handlers on /api (legacy store) and /api/v1 (new clients).
+// Do not remove /api until the forced-update screen is live and the store
+// build is the minimum supported version.
+function mountApiRoutes(basePath) {
+  app.use(`${basePath}/auth`, authRoutes);
+  app.use(basePath, questionsRoutes);
+  app.use(basePath, userQuizRoutes);
+  app.use(basePath, aiRoutes);
+  app.use(`${basePath}/users`, usersRoutes);
+  app.use(basePath, activityRoutes);
+  app.use(`${basePath}/trivia`, triviaRoutes);
+  app.use(`${basePath}/games`, gamesRoutes);
+  app.use(basePath, reportsRoutes);
+}
+
+mountApiRoutes("/api");
+mountApiRoutes("/api/v1");
 
 // Error handling middleware (must be last)
 app.use(errorHandler);
