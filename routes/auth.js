@@ -3,7 +3,6 @@ const crypto = require("crypto"); // Import the crypto module
 const bcrypt = require("bcryptjs");
 const { validate, signupSchema, loginSchema } = require("../middleware/validate");
 const User = require("../models/User");
-const UserActivity = require('../models/UserActivity');
 const mailer = require('../services/mailer');
 
 
@@ -281,11 +280,16 @@ router.post('/reset-password', async (req, res) => {
 router.delete("/delete-account", authMiddleware, async (req, res, next) => {
   try {
     const userId = req.user._id;
+    const hadAnalyticsConsent = Boolean(req.user.analyticsConsent);
     const posthog = require("../services/posthog");
+    const { deleteUserCascade } = require("../services/deleteUserCascade");
 
-    // Best-effort analytics cleanup before dropping the user row (full GDPR path is P0.9).
+    // Best-effort analytics cleanup before dropping the user row.
     try {
-      posthog.capture(String(userId), "account_deleted");
+      posthog.capture(String(userId), "account_deleted", {
+        analyticsConsent: hadAnalyticsConsent,
+      });
+      // Always attempt person delete by distinct id (Mongo userId). No-ops without personal API key.
       await posthog.deletePersonByDistinctId(String(userId));
       await posthog.shutdown();
     } catch (analyticsError) {
@@ -295,14 +299,13 @@ router.delete("/delete-account", authMiddleware, async (req, res, next) => {
       );
     }
 
-    // 1) Remove any activity logs (optional)
-    await UserActivity.deleteMany({ userId });
+    const { deleted } = await deleteUserCascade(userId);
 
-    // 2) Remove the user
-    await User.findByIdAndDelete(userId);
-
-    console.log("Account deleted successfully for user:", userId);
-    res.json({ message: "Account deleted successfully." });
+    console.log("Account deleted successfully for user:", userId, deleted);
+    res.json({
+      message: "Account deleted successfully.",
+      deleted,
+    });
   } catch (err) {
     console.error("Error deleting account:", err);
     return next(err);

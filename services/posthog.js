@@ -57,8 +57,8 @@ async function shutdown() {
 }
 
 /**
- * Best-effort GDPR person delete. Requires POSTHOG_PERSONAL_API_KEY + POSTHOG_PROJECT_ID.
- * Full account-deletion wiring is completed in P0.9; this is the hook P0.3 leaves ready.
+ * Best-effort GDPR person delete. Requires POSTHOG_PERSONAL_API_KEY (person:write) + POSTHOG_PROJECT_ID.
+ * Uses POST /persons/bulk_delete/ — the legacy DELETE ?distinct_id= path rejects personal API keys.
  */
 async function deletePersonByDistinctId(distinctId) {
   const personalKey = process.env.POSTHOG_PERSONAL_API_KEY;
@@ -72,15 +72,18 @@ async function deletePersonByDistinctId(distinctId) {
     return { skipped: true };
   }
 
-  const url = `${host}/api/projects/${projectId}/persons/?distinct_id=${encodeURIComponent(
-    String(distinctId)
-  )}&delete_events=true`;
+  const url = `${host}/api/projects/${projectId}/persons/bulk_delete/`;
 
   const resp = await fetch(url, {
-    method: "DELETE",
+    method: "POST",
     headers: {
       Authorization: `Bearer ${personalKey}`,
+      "Content-Type": "application/json",
     },
+    body: JSON.stringify({
+      distinct_ids: [String(distinctId)],
+      delete_events: true,
+    }),
   });
 
   if (!resp.ok) {
@@ -88,7 +91,8 @@ async function deletePersonByDistinctId(distinctId) {
     throw new Error(`PostHog person delete failed (${resp.status}): ${body}`);
   }
 
-  return { deleted: true };
+  const payload = await resp.json().catch(() => ({}));
+  return { deleted: true, ...payload };
 }
 
 module.exports = {
