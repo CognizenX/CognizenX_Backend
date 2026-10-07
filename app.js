@@ -22,10 +22,12 @@
 // Security: OpenAI API keys moved from frontend to backend
 // Backward Compatibility: 100% maintained for existing App Store frontend
 
+require("dotenv").config();
+const Sentry = require("./instrument");
+
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
-require("dotenv").config();
 
 const axios = require("axios");
 const crypto = require("crypto");
@@ -131,6 +133,18 @@ function mountApiRoutes(basePath) {
 
 mountApiRoutes("/api");
 mountApiRoutes("/api/v1");
+
+// Verification route for Sentry setup (disabled in production unless explicitly enabled).
+if (process.env.SENTRY_ENABLE_DEBUG_ROUTE === "1" || process.env.NODE_ENV !== "production") {
+  const debugHandler = function debugSentryHandler(_req, _res) {
+    throw new Error("My first Sentry error!");
+  };
+  app.get("/api/debug-sentry", debugHandler);
+  app.get("/api/v1/debug-sentry", debugHandler);
+}
+
+// Sentry captures route errors; our handler still shapes the HTTP response.
+Sentry.setupExpressErrorHandler(app);
 
 // Error handling middleware (must be last)
 app.use(errorHandler);

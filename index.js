@@ -1,3 +1,6 @@
+require("dotenv").config();
+require("./instrument");
+
 const app = require("./app");
 
 // Start server for local development
